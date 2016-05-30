@@ -5,19 +5,15 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
-import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.utils.CameraInputController;
 import com.badlogic.gdx.utils.Array;
-import org.lwjgl.util.glu.GLUtessellator;
-
-import static org.lwjgl.util.glu.GLU.*;
 
 
 public class DoomTestGame extends ApplicationAdapter {
 
-    ModelBatch b;
+    ModelBatch batch;
     Camera camera;
     CameraInputController camController;
 
@@ -38,7 +34,7 @@ public class DoomTestGame extends ApplicationAdapter {
 
 	@Override
 	public void create () {
-        b = new ModelBatch();
+        batch = new ModelBatch();
 
         camera = new PerspectiveCamera(67, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         camera.position.set(0f, 0f, -5f);
@@ -47,44 +43,27 @@ public class DoomTestGame extends ApplicationAdapter {
         camera.far = 300f;
         camera.update();
 
-        models.add(new ModelInstance(tesselate()));
-
+        // A camera that can be driven around
         camController = new CameraInputController(camera);
         Gdx.input.setInputProcessor(camController);
+
+        // Make the star sector
+        Sector sector = new Sector();
+        for(int x = 0; x < star.length; x++) {
+            sector.addVertex((float)star[x][0], (float)star[x][1], (float)star[x][2]);
+        }
+
+        // Add a quad sub sector to the star
+        Sector subsector = new Sector();
+        for(int x = 0; x < quad.length; x++) {
+            subsector.addVertex((float)quad[x][0], (float)quad[x][1], (float)quad[x][2]);
+        }
+
+        sector.addSubSector(subsector);
+
+        // turn the sector into a model
+        models.add(new ModelInstance(sector.tesselate()));
 	}
-
-    public Model tesselate() {
-        GLUtessellator tesselator = gluNewTess();
-
-        TessCallback callback = new TessCallback();
-        tesselator.gluTessCallback(GLU_TESS_VERTEX, callback);
-        tesselator.gluTessCallback(GLU_TESS_BEGIN, callback);
-        tesselator.gluTessCallback(GLU_TESS_END, callback);
-        tesselator.gluTessCallback(GLU_TESS_COMBINE, callback);
-
-        tesselator.gluTessProperty(GLU_TESS_WINDING_RULE, GLU_TESS_WINDING_NONZERO);
-        tesselator.gluTessBeginPolygon(null);
-
-        tesselator.gluTessBeginContour();
-        for (int x = 0; x < star.length; x++) //loop through the vertices
-        {
-            tesselator.gluTessVertex(star[x], 0, new VertexData(star[x])); //store the vertex
-        }
-        tesselator.gluTessEndContour();
-
-        tesselator.gluTessBeginContour();
-        for (int x = 0; x < quad.length; x++) //loop through the vertices
-        {
-            tesselator.gluTessVertex(quad[x], 0, new VertexData(quad[x])); //store the vertex
-        }
-        tesselator.gluTessEndContour();
-
-        tesselator.gluEndPolygon();
-
-        tesselator.gluDeleteTess();
-
-        return callback.getModel();
-    }
 
 	@Override
 	public void render () {
@@ -93,8 +72,8 @@ public class DoomTestGame extends ApplicationAdapter {
 
         camController.update();
 
-        b.begin(camera);
-        b.render(models);
-        b.end();
+        batch.begin(camera);
+        batch.render(models);
+        batch.end();
 	}
 }
