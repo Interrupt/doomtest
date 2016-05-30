@@ -1,9 +1,11 @@
 package com.interrupt.doomtest;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
+import com.badlogic.gdx.graphics.g3d.attributes.IntAttribute;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import org.lwjgl.util.glu.GLUtessellator;
@@ -13,7 +15,8 @@ import static org.lwjgl.util.glu.GLU.*;
 public class Sector {
     Array<Vector3> points = new Array<Vector3>();
     public Array<Sector> subsectors = new Array<Sector>();
-    Material material = new Material(ColorAttribute.createDiffuse(Color.WHITE));
+    Material material = new Material(ColorAttribute.createDiffuse(Color.WHITE), IntAttribute.createCullFace(GL20.GL_FALSE));
+
 
     public void addVertex(float x, float y, float z) {
         points.add(new Vector3(x, y, z));
@@ -27,10 +30,6 @@ public class Sector {
         return points;
     }
 
-    public void setMaterial(Material material) {
-        this.material = material;
-    }
-
     public Model tesselate() {
         GLUtessellator tesselator = gluNewTess();
 
@@ -40,7 +39,7 @@ public class Sector {
         tesselator.gluTessCallback(GLU_TESS_END, callback);
         tesselator.gluTessCallback(GLU_TESS_COMBINE, callback);
 
-        tesselator.gluTessProperty(GLU_TESS_WINDING_RULE, GLU_TESS_WINDING_NONZERO);
+        tesselator.gluTessProperty(GLU_TESS_WINDING_RULE, GLU_TESS_WINDING_POSITIVE);
         tesselator.gluTessBeginPolygon(null);
 
         tesselateContour(this, tesselator, callback);
