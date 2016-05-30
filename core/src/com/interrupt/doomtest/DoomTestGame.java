@@ -24,7 +24,6 @@ public class DoomTestGame extends ApplicationAdapter {
     Camera camera;
     CameraInputController camController;
     ShapeRenderer lineRenderer;
-    ShapeRenderer pointRenderer;
     Vector3 intersection = new Vector3();
     public Array<ModelInstance> models = new Array<ModelInstance>();
     public Sector sector;

@@ -15,7 +15,7 @@ import static org.lwjgl.util.glu.GLU.*;
 public class Sector {
     Array<Vector3> points = new Array<Vector3>();
     public Array<Sector> subsectors = new Array<Sector>();
-    Material material = new Material(ColorAttribute.createDiffuse(Color.WHITE), IntAttribute.createCullFace(GL20.GL_FALSE));
+    Material material = new Material(ColorAttribute.createDiffuse(Color.GRAY), IntAttribute.createCullFace(GL20.GL_FALSE));
 
 
     public void addVertex(float x, float y, float z) {
@@ -39,7 +39,7 @@ public class Sector {
         tesselator.gluTessCallback(GLU_TESS_END, callback);
         tesselator.gluTessCallback(GLU_TESS_COMBINE, callback);
 
-        tesselator.gluTessProperty(GLU_TESS_WINDING_RULE, GLU_TESS_WINDING_POSITIVE);
+        tesselator.gluTessProperty(GLU_TESS_WINDING_RULE, GLU_TESS_WINDING_ODD);
         tesselator.gluTessBeginPolygon(null);
 
         tesselateContour(this, tesselator, callback);
