@@ -35,8 +35,8 @@ public class DoomTestGame extends ApplicationAdapter {
         batch = new ModelBatch();
 
         camera = new PerspectiveCamera(67, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        camera.position.set(0f, 10f, -5f);
-        camera.lookAt(0,0,-5f);
+        camera.position.set(0f, 5f, -5f);
+        //camera.lookAt(0,0,-5f);
         camera.near = 1f;
         camera.far = 300f;
         camera.update();
@@ -92,6 +92,7 @@ public class DoomTestGame extends ApplicationAdapter {
             batch.render(models);
             batch.end();
 
+            renderGrid();
             renderSectorAsLines(sector);
             renderNextLine(sector);
             renderPoints(sector);
@@ -128,18 +129,36 @@ public class DoomTestGame extends ApplicationAdapter {
     }
 
     public void renderPoints(Sector s) {
+        lineRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        lineRenderer.setColor(Color.YELLOW);
         Array<Vector3> points = s.getPoints();
         if(points.size > 0) {
             for(Vector3 point : points) {
-                lineRenderer.begin(ShapeRenderer.ShapeType.Filled);
-                lineRenderer.setColor(Color.YELLOW);
                 lineRenderer.box(point.x - 0.05f, point.y, point.z + 0.05f, 0.1f, 0.01f, 0.1f);
-                lineRenderer.end();
             }
         }
+        lineRenderer.box(intersection.x - 0.05f, intersection.y, intersection.z + 0.05f, 0.1f, 0.01f, 0.1f);
+        lineRenderer.end();
 
         for(Sector subsector : s.subsectors) {
             renderPoints(subsector);
         }
+    }
+
+    public void renderGrid() {
+
+        float size = 80;
+        float half = size / 2;
+
+        lineRenderer.setColor(Color.DARK_GRAY);
+
+        lineRenderer.begin(ShapeRenderer.ShapeType.Line);
+        for(int i = 0; i < size; i++) {
+            lineRenderer.line(-half, 0, i - half, half, 0, i - half);
+        }
+        for(int i = 0; i < size; i++) {
+            lineRenderer.line(i - half, 0, -half, i - half, 0, half);
+        }
+        lineRenderer.end();
     }
 }
