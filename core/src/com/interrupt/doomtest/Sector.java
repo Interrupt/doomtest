@@ -1,6 +1,9 @@
 package com.interrupt.doomtest;
 
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Model;
+import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import org.lwjgl.util.glu.GLUtessellator;
@@ -9,7 +12,8 @@ import static org.lwjgl.util.glu.GLU.*;
 
 public class Sector {
     Array<Vector3> points = new Array<Vector3>();
-    Array<Sector> subsectors = new Array<Sector>();
+    public Array<Sector> subsectors = new Array<Sector>();
+    Material material = new Material(ColorAttribute.createDiffuse(Color.WHITE));
 
     public void addVertex(float x, float y, float z) {
         points.add(new Vector3(x, y, z));
@@ -23,10 +27,14 @@ public class Sector {
         return points;
     }
 
+    public void setMaterial(Material material) {
+        this.material = material;
+    }
+
     public Model tesselate() {
         GLUtessellator tesselator = gluNewTess();
 
-        TessCallback callback = new TessCallback();
+        TessCallback callback = new TessCallback(material);
         tesselator.gluTessCallback(GLU_TESS_VERTEX, callback);
         tesselator.gluTessCallback(GLU_TESS_BEGIN, callback);
         tesselator.gluTessCallback(GLU_TESS_END, callback);
@@ -35,7 +43,7 @@ public class Sector {
         tesselator.gluTessProperty(GLU_TESS_WINDING_RULE, GLU_TESS_WINDING_NONZERO);
         tesselator.gluTessBeginPolygon(null);
 
-        tesselateContour(this, tesselator);
+        tesselateContour(this, tesselator, callback);
 
         tesselator.gluEndPolygon();
 
@@ -44,7 +52,7 @@ public class Sector {
         return callback.getModel();
     }
 
-    private void tesselateContour(Sector sector, GLUtessellator tesselator) {
+    private void tesselateContour(Sector sector, GLUtessellator tesselator, TessCallback callback) {
         // Tesselate the current contour
         Array<Vector3> vertices = sector.getPoints();
         tesselator.gluTessBeginContour();
@@ -57,7 +65,7 @@ public class Sector {
 
         // Now, carve out all the sub sectors
         for(int i = 0; i < sector.subsectors.size; i++) {
-            tesselateContour(sector.subsectors.get(i), tesselator);
+            tesselateContour(sector.subsectors.get(i), tesselator, callback);
         }
     }
 

@@ -3,10 +3,13 @@ package com.interrupt.doomtest;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Camera;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
+import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
+import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.utils.CameraInputController;
 import com.badlogic.gdx.utils.Array;
 
@@ -49,6 +52,7 @@ public class DoomTestGame extends ApplicationAdapter {
 
         // Make the star sector
         Sector sector = new Sector();
+        sector.setMaterial(new Material(ColorAttribute.createDiffuse(Color.RED)));
         for(int x = 0; x < star.length; x++) {
             sector.addVertex((float)star[x][0], (float)star[x][1], (float)star[x][2]);
         }

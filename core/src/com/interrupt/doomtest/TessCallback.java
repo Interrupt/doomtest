@@ -25,6 +25,11 @@ public class TessCallback extends GLUtessellatorCallbackAdapter {
         modelBuilder.begin();
     }
 
+    public TessCallback(Material material) {
+        modelBuilder.begin();
+        this.material = material;
+    }
+
     public void begin(int type) {
         currentType = type;
         parts++;
