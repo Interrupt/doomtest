@@ -90,6 +90,8 @@ public class TessCallback extends GLUtessellatorCallbackAdapter {
     }
 
     public Model getModel() {
-        return modelBuilder.end();
+        Model m = modelBuilder.end();
+        modelBuilder.begin();
+        return m;
     }
 }
