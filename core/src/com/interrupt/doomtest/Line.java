@@ -24,4 +24,14 @@ public class Line {
         this.left = left;
         this.right = right;
     }
+
+    public boolean isEqualTo(Line other) {
+        if(other == null)
+            return false;
+        if(other.start.equals(start) && other.end.equals(end))
+            return true;
+        if(other.end.equals(start) && other.start.equals(end))
+            return true;
+        return false;
+    }
 }

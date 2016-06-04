@@ -40,12 +40,8 @@ public class Sector {
         this.isSolid = isSolid;
     }
 
-    public void addVertex(float x, float y) {
-        points.add(new Vector2(x, y));
-    }
-
     public void addVertex(Vector2 vertex) {
-        addVertex(vertex.x, vertex.y);
+        points.add(vertex);
     }
 
     public void addSubSector(Sector s) {
@@ -57,8 +53,22 @@ public class Sector {
         return points;
     }
 
+    public boolean hasVertex(Vector2 point) {
+        for(Vector2 p : points) {
+            if(p.x == point.x && p.y == point.y)
+                return true;
+        }
+
+        // might also be in one of the subsectors
+        for(Sector subsector : subsectors) {
+            if(subsector.hasVertex(point))
+                return true;
+        }
+
+        return false;
+    }
+
     public Model tesselate() {
-        if(isSolid) return null;
 
         tesselator.gluTessCallback(GLU_TESS_VERTEX, callback);
         tesselator.gluTessCallback(GLU_TESS_BEGIN, callback);
@@ -66,11 +76,20 @@ public class Sector {
         tesselator.gluTessCallback(GLU_TESS_COMBINE, callback);
 
         tesselator.gluTessProperty(GLU_TESS_WINDING_RULE, GLU_TESS_WINDING_ODD);
-        tesselator.gluTessBeginPolygon(null);
 
-        tesselateContour(this, tesselator, callback);
+        if (!isSolid) {
+            tesselator.gluTessBeginPolygon(null);
 
-        tesselator.gluEndPolygon();
+            // Carve the main sector
+            tesselateContour(this, tesselator, callback);
+
+            // Now, carve out all the sub sectors
+            for(int i = 0; i < subsectors.size; i++) {
+                tesselateContour(subsectors.get(i), tesselator, callback);
+            }
+
+            tesselator.gluEndPolygon();
+        }
 
         Model built = callback.getModel();
 
@@ -96,14 +115,9 @@ public class Sector {
         for (int x = 0; x < vertices.size; x++) //loop through the vertices
         {
             double[] data = vertexToDoubles(vertices.get(x));
-            tesselator.gluTessVertex(data, 0, new VertexData(data)); //store the avertex
+            tesselator.gluTessVertex(data, 0, new VertexData(data)); //store the vertex
         }
         tesselator.gluTessEndContour();
-
-        // Now, carve out all the sub sectors
-        for(int i = 0; i < sector.subsectors.size; i++) {
-            tesselateContour(sector.subsectors.get(i), tesselator, callback);
-        }
     }
 
     private double[] vertexToDoubles(Vector2 vertex) {
@@ -116,7 +130,7 @@ public class Sector {
 
     public Sector getSectorOfPoint(Vector2 point) {
         Sector inSector = null;
-        if(Intersector.isPointInPolygon(getPoints(), point)) {
+        if(isPointInside(point)) {
             // this point is IN this sector, know it's at least here
             inSector = this;
 
@@ -130,5 +144,9 @@ public class Sector {
         }
 
         return inSector;
+    }
+
+    public boolean isPointInside(Vector2 point) {
+        return Intersector.isPointInPolygon(getPoints(), point);
     }
 }

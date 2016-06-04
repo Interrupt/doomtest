@@ -26,7 +26,7 @@ public class DoomTestGame extends ApplicationAdapter {
     Camera camera;
     CameraInputController camController;
     ShapeRenderer lineRenderer;
-    Vector3 intersection = new Vector3();
+
     public Array<ModelInstance> models = new Array<ModelInstance>();
     public Array<Sector> sectors;
     public Array<Line> lines;
@@ -35,6 +35,18 @@ public class DoomTestGame extends ApplicationAdapter {
 
     Vector3 tempVec3 = new Vector3();
     Vector3 tempVec3_2 = new Vector3();
+
+    Vector3 lastIntersection = new Vector3();
+    Vector3 intersection = new Vector3();
+    Vector3 pickedGridPoint = new Vector3();
+    Vector2 pickedPoint2d = new Vector2();
+
+    Sector hoveredSector = null;
+    Vector2 pickedPoint = null;
+
+    public enum EditorModes { SECTOR, POINT };
+
+    public EditorModes editorMode = EditorModes.SECTOR;
 
 	@Override
 	public void create () {
@@ -58,7 +70,7 @@ public class DoomTestGame extends ApplicationAdapter {
         lines = new Array<Line>();
 	}
 
-    public void refreshSector() {
+    public void refreshSectors() {
         models.clear();
 
         for(Sector sector : sectors) {
@@ -72,54 +84,189 @@ public class DoomTestGame extends ApplicationAdapter {
     public Sector pickSector(Vector2 point) {
         for(Sector sector : sectors) {
             Sector picked = sector.getSectorOfPoint(point);
-            if(picked != null)
+            if(picked != null && !picked.hasVertex(point))
                 return picked;
         }
 
         return null;
     }
 
+    public void refreshLineSolidity(Sector sector) {
+        for(Line line : lines) {
+            if(line.left == sector || line.right == sector) {
+                if (line.right == null) {
+                    line.solid = !sector.isSolid;
+                }
+                else {
+                    if(line.left.isSolid && !line.right.isSolid) line.solid = true;
+                    else line.solid = line.right.isSolid && !line.left.isSolid;
+                }
+            }
+        }
+    }
+
     public void update() {
         Ray r = camera.getPickRay(Gdx.input.getX(), Gdx.input.getY());
-        if(Intersector.intersectRayPlane(r, editPlane, intersection)) {
-            // round intersection point to the grid
-            intersection.x = (int)intersection.x;
-            intersection.z = (int)intersection.z;
 
-            // Add a new vertex when clicked
-            if(Gdx.input.justTouched()) {
+        lastIntersection.set(intersection);
+        if (Intersector.intersectRayPlane(r, editPlane, intersection)) {
+            // round grid point to the grid
+            pickedGridPoint.set((int) intersection.x, intersection.y, (int) intersection.z);
+            pickedPoint2d.set(intersection.x, intersection.z);
 
-                // Start a new sector if not currently editing one
-                if(current == null) {
-                    // This sector might have a parent sector
-                    Sector parent = pickSector(new Vector2(intersection.x, intersection.z));
-                    current = new Sector();
+            // find which sector is picked
+            hoveredSector = pickSector(pickedPoint2d);
 
-                    if(parent != null)
-                        parent.addSubSector(current);
-                    else
-                        sectors.add(current);
+            // which editing mode?
+            if (editorMode == EditorModes.SECTOR) {
+                if (Gdx.input.isKeyJustPressed(Input.Keys.DEL)) {
+                    //Vector2 next = new Vector2(intersection.x, intersection.z);
+                    Sector picked = hoveredSector;
+                    picked.isSolid = !picked.isSolid;
+                    refreshLineSolidity(picked);
+                    refreshSectors();
                 }
 
-                addVertex(intersection.x, intersection.z);
+                // Add a new vertex when clicked
+                if (Gdx.input.justTouched()) {
 
-                refreshSector();
+                    Vector2 next = new Vector2(pickedGridPoint.x, pickedGridPoint.z);
+
+                    // might have started on the edge and clicked inside of a sector
+                    if (current != null && current.parent == null && current.points.size == 1) {
+                        Vector2 start = current.points.first();
+                        Sector found = null;
+                        for (Sector s : sectors) {
+                            if (s != current && s.hasVertex(start) && s.isPointInside(next)) {
+                                found = s;
+                                break;
+                            }
+                        }
+
+                        if (found != null) {
+                            sectors.removeValue(current, true);
+                            found.addSubSector(current);
+                        }
+                    }
+
+                    // Start a new sector if not currently editing one
+                    if (current == null) {
+                        // This sector might have a parent sector
+                        Sector parent = pickSector(next);
+
+                        // Don't pick a parent right away if this vertex exists already
+                        if (vertexExists(new Vector2(pickedGridPoint.x, pickedGridPoint.z))) {
+                            parent = null;
+                        }
+
+                        current = new Sector();
+
+                        if (parent != null)
+                            parent.addSubSector(current);
+                        else
+                            sectors.add(current);
+                    } else {
+                        if (current.parent == null && !vertexExists(new Vector2(pickedGridPoint.x, pickedGridPoint.z)))
+                            if (hoveredSector != null) current.parent = hoveredSector;
+                    }
+
+                    if (isValidSectorForNextPoint(pickedGridPoint))
+                        addVertex(pickedGridPoint.x, pickedGridPoint.z);
+
+                    refreshSectors();
+                }
+
+                // Cancel the current sector
+                if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+                    cancelEditingSector();
+                }
+
+                // Finish current sector
+                if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
+                    finishSector();
+                    current = null;
+                    refreshSectors();
+                }
             }
+            else if (editorMode == EditorModes.POINT) {
+                if(!Gdx.input.isTouched()) {
+                    pickedPoint2d.x = (int) pickedPoint2d.x;
+                    pickedPoint2d.y = (int) pickedPoint2d.y;
 
-            // Finish current sector
-            if(Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
-
-                Vector2 startPoint = current.getPoints().first();
-                Vector2 lastPoint = current.getPoints().get(current.getPoints().size - 1);
-
-                if(!lastPoint.equals(startPoint))
-                    addVertex(startPoint.x, startPoint.y);
-
-                current = null;
-
-                refreshSector();
+                    // todo: better vertex picking
+                    pickedPoint = getExistingVertex(pickedPoint2d);
+                }
+                else {
+                    if(pickedPoint != null) {
+                        pickedPoint.add(intersection.x - lastIntersection.x, intersection.z - lastIntersection.z);
+                        refreshSectors();
+                    }
+                }
             }
-         }
+        }
+
+        if(Gdx.input.isKeyJustPressed(Input.Keys.P)) {
+            if(current != null) cancelEditingSector();
+
+            if(editorMode == EditorModes.SECTOR) {
+                editorMode = EditorModes.POINT;
+            }
+            else {
+                editorMode = EditorModes.SECTOR;
+            }
+        }
+    }
+
+    private void cancelEditingSector() {
+        if (current.parent == null)
+            sectors.removeValue(current, true);
+        else
+            current.parent.subsectors.removeValue(current, true);
+
+        // remove the lines without a sector anymore
+        Array<Line> orphanLines = new Array<Line>();
+        for (Line line : lines) {
+            if (line.left == current) {
+                orphanLines.add(line);
+            } else if (line.right == current) {
+                line.right = null;
+            }
+        }
+        for (Line orphan : orphanLines) {
+            lines.removeValue(orphan, true);
+        }
+
+        current = null;
+
+        refreshSectors();
+    }
+
+    private boolean isValidSectorForNextPoint(Vector3 pickedGridPoint) {
+        if(current.parent == null)
+            return true;
+        else if(current.parent == hoveredSector)
+            return true;
+        else {
+            return vertexExists(new Vector2(pickedGridPoint.x, pickedGridPoint.z));
+        }
+    }
+
+    public boolean vertexExists(Vector2 vertex) {
+        for(Line line : lines) {
+            if(line.start.equals(vertex) || line.end.equals(vertex))
+                return true;
+        }
+        return false;
+    }
+
+    public Vector2 getExistingVertex(Vector2 vertex) {
+        for(Line line : lines) {
+            if(line.start.equals(vertex))
+                return line.start;
+            else if(line.end.equals(vertex))
+                return line.end;
+        }
+        return null;
     }
 
     public void addVertex(float x, float y) {
@@ -127,8 +274,47 @@ public class DoomTestGame extends ApplicationAdapter {
             Vector2 next = new Vector2(x, y);
             current.addVertex(next);
 
+            // todo: fix!
             Vector2 previous = current.points.get(current.points.size - 2);
-            lines.add(new Line(previous, next, current.parent == null, current, current.parent));
+            addLine(previous, next);
+        }
+    }
+
+    public void finishSector() {
+        Vector2 startPoint = current.getPoints().first();
+        Vector2 lastPoint = current.getPoints().get(current.getPoints().size - 1);
+
+        if (!lastPoint.equals(startPoint)) {
+            //current.addVertex(startPoint);
+            addLine(lastPoint, startPoint);
+        }
+    }
+
+    public void addLine(Vector2 start, Vector2 end) {
+
+        Line line = new Line(start, end, current.parent == null, current, current.parent);
+
+        // check if this exists already
+        Line existing = null;
+        for(Line l : lines) {
+           if(l.isEqualTo(line)) {
+               existing = l;
+               break;
+           }
+        }
+
+        if(existing == null) {
+            lines.add(new Line(start, end, current.parent == null, current, current.parent));
+        }
+        else {
+            if(existing.left != current) {
+                existing.solid = false;
+                existing.right = current;
+            }
+            /*if(existing.left != current && existing.left != current.parent) {
+                existing.solid = false;
+                existing.right = current;
+            }*/
         }
     }
 
@@ -156,8 +342,19 @@ public class DoomTestGame extends ApplicationAdapter {
                 renderWalls();
             }
 
-            renderNextLine();
-            renderNextPoint();
+            if(editorMode == EditorModes.SECTOR) {
+                renderNextLine();
+                renderNextPoint();
+            }
+            else if(editorMode == EditorModes.POINT) {
+                if(pickedPoint != null) {
+                    float pointSize = 0.2f;
+                    lineRenderer.begin(ShapeRenderer.ShapeType.Filled);
+                    lineRenderer.setColor(Color.RED);
+                    lineRenderer.box(pickedPoint.x - pointSize / 2, 0, pickedPoint.y + pointSize / 2, pointSize, pointSize / 3, pointSize);
+                    lineRenderer.end();
+                }
+            }
         }
         catch(Throwable t) {
             Gdx.app.log("Error", t.getMessage());
@@ -168,7 +365,12 @@ public class DoomTestGame extends ApplicationAdapter {
         Array<Vector2> points = s.getPoints();
         if(points.size >= 2) {
             lineRenderer.begin(ShapeRenderer.ShapeType.Line);
-            lineRenderer.setColor(Color.WHITE);
+
+            if(hoveredSector == s || current == s)
+                lineRenderer.setColor(Color.WHITE);
+            else
+                lineRenderer.setColor(Color.LIGHT_GRAY);
+
             for (int i = 0; i < points.size - 1; i++) {
                 Vector2 startPoint = points.get(i);
                 Vector2 endPoint = points.get(i + 1);
@@ -193,7 +395,7 @@ public class DoomTestGame extends ApplicationAdapter {
                 Vector2 endPoint = points.get(points.size - 1);
                 lineRenderer.begin(ShapeRenderer.ShapeType.Line);
                 lineRenderer.setColor(Color.YELLOW);
-                lineRenderer.line(tempVec3.set(endPoint.x, 0, endPoint.y), intersection);
+                lineRenderer.line(tempVec3.set(endPoint.x, 0, endPoint.y), pickedGridPoint);
                 lineRenderer.end();
             }
         }
@@ -220,11 +422,11 @@ public class DoomTestGame extends ApplicationAdapter {
 
     public void renderWalls() {
         lineRenderer.begin(ShapeRenderer.ShapeType.Line);
-        lineRenderer.setColor(Color.WHITE);
+        lineRenderer.setColor(Color.GRAY);
 
         for(Line line : lines) {
             if(line.solid) {
-                for (int i = 1; i < 10; i++) {
+                for (int i = 1; i < 5; i++) {
                     lineRenderer.line(line.start.x, i, line.start.y, line.end.x, i, line.end.y);
                 }
             }
@@ -237,7 +439,7 @@ public class DoomTestGame extends ApplicationAdapter {
         float pointSize = 0.2f;
         lineRenderer.begin(ShapeRenderer.ShapeType.Filled);
         lineRenderer.setColor(Color.YELLOW);
-        lineRenderer.box(intersection.x - pointSize / 2, intersection.y, intersection.z + pointSize / 2, pointSize, pointSize / 3, pointSize);
+        lineRenderer.box(pickedGridPoint.x - pointSize / 2, pickedGridPoint.y, pickedGridPoint.z + pointSize / 2, pointSize, pointSize / 3, pointSize);
         lineRenderer.end();
     }
 
