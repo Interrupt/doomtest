@@ -149,4 +149,14 @@ public class Sector {
     public boolean isPointInside(Vector2 point) {
         return Intersector.isPointInPolygon(getPoints(), point);
     }
+
+    public void translate(float x, float y) {
+        for(Vector2 point : getPoints()) {
+            point.add(x, y);
+        }
+
+        for(Sector s : subsectors) {
+            s.translate(x, y);
+        }
+    }
 }

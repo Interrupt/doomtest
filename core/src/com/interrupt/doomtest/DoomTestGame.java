@@ -42,6 +42,7 @@ public class DoomTestGame extends ApplicationAdapter {
     Vector2 pickedPoint2d = new Vector2();
 
     Sector hoveredSector = null;
+    Sector pickedSector = null;
     Vector2 pickedPoint = null;
 
     public enum EditorModes { SECTOR, POINT };
@@ -57,7 +58,7 @@ public class DoomTestGame extends ApplicationAdapter {
         camera.position.set(0f, 20f, -5f);
 
         Vector3 tmpV1 = new Vector3(camera.direction).crs(camera.up).nor();
-        camera.direction.rotate(tmpV1, -89.99f);
+        camera.direction.rotate(tmpV1, -70f);
 
         //camera.lookAt(0,0,-5f);
         camera.near = 1f;
@@ -200,10 +201,15 @@ public class DoomTestGame extends ApplicationAdapter {
 
                     // todo: better vertex picking
                     pickedPoint = getExistingVertex(pickedPoint2d);
+                    if(pickedPoint == null && hoveredSector != null) pickedSector = hoveredSector;
                 }
                 else {
                     if(pickedPoint != null) {
                         pickedPoint.add((int)intersection.x - (int)lastIntersection.x, (int)intersection.z - (int)lastIntersection.z);
+                        refreshSectors();
+                    }
+                    else if(pickedSector != null) {
+                        pickedSector.translate((int)intersection.x - (int)lastIntersection.x, (int)intersection.z - (int)lastIntersection.z);
                         refreshSectors();
                     }
                 }
