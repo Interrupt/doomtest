@@ -10,7 +10,6 @@ import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
-import com.badlogic.gdx.graphics.g3d.utils.CameraInputController;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.Plane;
@@ -18,13 +17,14 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.collision.Ray;
 import com.badlogic.gdx.utils.Array;
+import com.interrupt.doomtest.input.EditorCameraController;
 
 
 public class DoomTestGame extends ApplicationAdapter {
 
     ModelBatch batch;
     Camera camera;
-    CameraInputController camController;
+    EditorCameraController camController;
     ShapeRenderer lineRenderer;
 
     public Array<ModelInstance> models = new Array<ModelInstance>();
@@ -53,14 +53,19 @@ public class DoomTestGame extends ApplicationAdapter {
         batch = new ModelBatch();
 
         camera = new PerspectiveCamera(67, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        camera.up.set(Vector3.Y);
         camera.position.set(0f, 20f, -5f);
-        camera.lookAt(0,0,-5f);
+
+        Vector3 tmpV1 = new Vector3(camera.direction).crs(camera.up).nor();
+        camera.direction.rotate(tmpV1, -89.99f);
+
+        //camera.lookAt(0,0,-5f);
         camera.near = 1f;
         camera.far = 300f;
         camera.update();
 
         // A camera that can be driven around
-        camController = new CameraInputController(camera);
+        camController = new EditorCameraController(camera);
         Gdx.input.setInputProcessor(camController);
 
         lineRenderer = new ShapeRenderer();
@@ -198,7 +203,7 @@ public class DoomTestGame extends ApplicationAdapter {
                 }
                 else {
                     if(pickedPoint != null) {
-                        pickedPoint.add(intersection.x - lastIntersection.x, intersection.z - lastIntersection.z);
+                        pickedPoint.add((int)intersection.x - (int)lastIntersection.x, (int)intersection.z - (int)lastIntersection.z);
                         refreshSectors();
                     }
                 }
@@ -272,6 +277,9 @@ public class DoomTestGame extends ApplicationAdapter {
     public void addVertex(float x, float y) {
         if(current != null) {
             Vector2 next = new Vector2(x, y);
+            Vector2 existing = getExistingVertex(next);
+            if(existing != null) next = existing;
+
             current.addVertex(next);
 
             // todo: fix!
