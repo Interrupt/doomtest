@@ -1,11 +1,14 @@
 package com.interrupt.doomtest;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.IntAttribute;
+import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.Vector2;
@@ -22,7 +25,8 @@ public class Sector {
     public Sector parent = null;
     public Array<Sector> subsectors = new Array<Sector>();
 
-    Material material = new Material(ColorAttribute.createDiffuse(Color.GRAY), IntAttribute.createCullFace(GL20.GL_FALSE));
+    Texture texture = new Texture(Gdx.files.internal("textures/floor1.png"));
+    Material material = new Material(ColorAttribute.createDiffuse(Color.WHITE), TextureAttribute.createDiffuse(texture), IntAttribute.createCullFace(GL20.GL_FALSE));
 
     private static GLUtessellator tesselator = gluNewTess();
     TessCallback callback = new TessCallback(material);
@@ -30,8 +34,10 @@ public class Sector {
     public boolean isSolid = false;
 
     public Sector() {
-        Random r = new Random();
-        material = new Material(ColorAttribute.createDiffuse(r.nextFloat(), r.nextFloat(), r.nextFloat(), 1f), IntAttribute.createCullFace(GL20.GL_FALSE));
+        //Random r = new Random();
+        //material = new Material(ColorAttribute.createDiffuse(r.nextFloat(), r.nextFloat(), r.nextFloat(), 1f), IntAttribute.createCullFace(GL20.GL_FALSE));
+        texture.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
+        texture.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
         callback.material = material;
     }
 

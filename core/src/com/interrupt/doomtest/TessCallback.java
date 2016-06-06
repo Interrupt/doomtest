@@ -50,7 +50,7 @@ public class TessCallback extends GLUtessellatorCallbackAdapter {
     }
 
     public void end() {
-        VertexAttributes attributes = new VertexAttributes(VertexAttribute.Position());
+        VertexAttributes attributes = new VertexAttributes(VertexAttribute.Position(), VertexAttribute.TexCoords(0));
 
         MeshBuilder meshBuilder = new MeshBuilder();
         meshBuilder.begin(attributes);
@@ -71,12 +71,22 @@ public class TessCallback extends GLUtessellatorCallbackAdapter {
     }
 
     private float[] getVertices() {
-        float[] vertices = new float[data.size * 3];
+        float[] vertices = new float[data.size * 5];
         for(int i = 0; i < data.size; i++) {
             VertexData vertex = data.get(i);
-            vertices[i * 3] = (float)vertex.data[0];
-            vertices[i * 3 + 1] = (float)vertex.data[1];
-            vertices[i * 3 + 2] = (float)vertex.data[2];
+
+            // position
+            vertices[i * 5] = (float)vertex.data[0];
+            vertices[i * 5 + 1] = (float)vertex.data[1];
+            vertices[i * 5 + 2] = (float)vertex.data[2];
+
+            // U
+            vertices[i * 5 + 3] = (float)vertex.data[0] * 0.5f;
+            vertices[i * 5 + 4] = (float)vertex.data[2] * 0.5f;
+
+            // V
+            //vertices[i * 3 + 3] = (float)vertex.data[5];
+            //vertices[i * 3 + 4] = (float)vertex.data[6];
         }
         return vertices;
     }

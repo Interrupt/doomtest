@@ -30,6 +30,8 @@ public class DoomTestGame extends ApplicationAdapter {
     public Array<ModelInstance> models = new Array<ModelInstance>();
     public Array<Sector> sectors;
     public Array<Line> lines;
+    public Array<Vector2> vertices = new Array<Vector2>();
+
     public Sector current;
     Plane editPlane = new Plane(Vector3.Y, Vector3.Zero);
 
@@ -61,7 +63,7 @@ public class DoomTestGame extends ApplicationAdapter {
         camera.direction.rotate(tmpV1, -70f);
 
         //camera.lookAt(0,0,-5f);
-        camera.near = 1f;
+        camera.near = 0.1f;
         camera.far = 300f;
         camera.update();
 
@@ -271,12 +273,8 @@ public class DoomTestGame extends ApplicationAdapter {
     }
 
     public Vector2 getExistingVertex(Vector2 vertex) {
-        for(Line line : lines) {
-            if(line.start.equals(vertex))
-                return line.start;
-            else if(line.end.equals(vertex))
-                return line.end;
-        }
+        int found = vertices.indexOf(vertex, false);
+        if(found >= 0) return vertices.get(found);
         return null;
     }
 
@@ -284,7 +282,10 @@ public class DoomTestGame extends ApplicationAdapter {
         if(current != null) {
             Vector2 next = new Vector2(x, y);
             Vector2 existing = getExistingVertex(next);
+
+            // use the existing vertex if found, or save a new one
             if(existing != null) next = existing;
+            else vertices.add(next);
 
             current.addVertex(next);
 
@@ -394,6 +395,15 @@ public class DoomTestGame extends ApplicationAdapter {
 
                 lineRenderer.line(tempVec3, tempVec3_2);
             }
+
+            Vector2 startPoint = points.get(0);
+            Vector2 endPoint = points.get(points.size - 1);
+
+            tempVec3.set(startPoint.x, 0, startPoint.y);
+            tempVec3_2.set(endPoint.x, 0, endPoint.y);
+
+            lineRenderer.line(tempVec3, tempVec3_2);
+
             lineRenderer.end();
         }
 
@@ -472,5 +482,9 @@ public class DoomTestGame extends ApplicationAdapter {
             lineRenderer.line(i - half, 0, -half, i - half, 0, half);
         }
         lineRenderer.end();
+    }
+
+    public void pickVertex() {
+
     }
 }
