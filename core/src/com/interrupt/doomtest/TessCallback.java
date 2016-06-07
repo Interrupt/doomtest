@@ -80,13 +80,9 @@ public class TessCallback extends GLUtessellatorCallbackAdapter {
             vertices[i * 5 + 1] = (float)vertex.data[1];
             vertices[i * 5 + 2] = (float)vertex.data[2];
 
-            // U
+            // UV
             vertices[i * 5 + 3] = (float)vertex.data[0] * 0.5f;
             vertices[i * 5 + 4] = (float)vertex.data[2] * 0.5f;
-
-            // V
-            //vertices[i * 3 + 3] = (float)vertex.data[5];
-            //vertices[i * 3 + 4] = (float)vertex.data[6];
         }
         return vertices;
     }

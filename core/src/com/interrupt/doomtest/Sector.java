@@ -97,21 +97,21 @@ public class Sector {
             tesselator.gluEndPolygon();
         }
 
-        Model built = callback.getModel();
+        // Start building the mesh
+        ModelBuilder mb = new ModelBuilder();
+        mb.begin();
 
-        if(subsectors.size > 0) {
-            ModelBuilder mb = new ModelBuilder();
-            mb.begin();
-            mb.node("0", built);
-            for (Sector subsector : subsectors) {
-                Model m = subsector.tesselate();
-                if(m != null)
-                    mb.node(new Random().nextInt() + "", m);
-            }
-            return mb.end();
+        // Make floor / ceiling
+        Model built = callback.getModel();
+        mb.node("0", built);
+
+        for (Sector subsector : subsectors) {
+            Model m = subsector.tesselate();
+            if(m != null)
+                mb.node(new Random().nextInt() + "", m);
         }
 
-        return built;
+        return mb.end();
     }
 
     private void tesselateContour(Sector sector, GLUtessellator tesselator, TessCallback callback) {

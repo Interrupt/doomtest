@@ -87,6 +87,9 @@ public class DoomTestGame extends ApplicationAdapter {
             ModelInstance floor = new ModelInstance(m);
             models.add(floor);
         }
+
+        // walls!
+        models.add(new ModelInstance(WallTesselator.tesselate(lines)));
     }
 
     public Sector pickSector(Vector2 point) {
@@ -345,16 +348,15 @@ public class DoomTestGame extends ApplicationAdapter {
 
             lineRenderer.setProjectionMatrix(camera.combined);
 
+            renderGrid();
+
             batch.begin(camera);
             batch.render(models);
             batch.end();
 
-            renderGrid();
-
             for(Sector sector : sectors) {
                 renderSectorWireframe(sector);
                 renderPoints(sector);
-                renderWalls();
             }
 
             if(editorMode == EditorModes.SECTOR) {

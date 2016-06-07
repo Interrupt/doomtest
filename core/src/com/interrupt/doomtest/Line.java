@@ -25,6 +25,11 @@ public class Line {
         this.right = right;
     }
 
+    public float getLength() {
+        Vector2 tempV2 = new Vector2();
+        return tempV2.set(start).sub(end).len();
+    }
+
     public boolean isEqualTo(Line other) {
         if(other == null)
             return false;
