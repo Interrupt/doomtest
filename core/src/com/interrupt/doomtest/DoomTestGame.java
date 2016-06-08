@@ -83,9 +83,7 @@ public class DoomTestGame extends ApplicationAdapter {
 
         for(Sector sector : sectors) {
             // turn the sector into a model
-            Model m = sector.tesselate();
-            ModelInstance floor = new ModelInstance(m);
-            models.add(floor);
+            models.addAll(sector.tesselate());
         }
 
         // walls!
@@ -135,6 +133,24 @@ public class DoomTestGame extends ApplicationAdapter {
                     Sector picked = hoveredSector;
                     picked.isSolid = !picked.isSolid;
                     refreshLineSolidity(picked);
+                    refreshSectors();
+                }
+
+                if(Gdx.input.isKeyJustPressed(Input.Keys.R)) {
+                    float mod = 0.1f;
+                    if(Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)) mod *= -1f;
+
+                    Sector picked = hoveredSector;
+                    picked.floorHeight += mod;
+                    refreshSectors();
+                }
+
+                if(Gdx.input.isKeyJustPressed(Input.Keys.T)) {
+                    float mod = 0.1f;
+                    if(Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)) mod *= -1f;
+
+                    Sector picked = hoveredSector;
+                    picked.ceilHeight += mod;
                     refreshSectors();
                 }
 

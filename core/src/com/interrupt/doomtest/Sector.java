@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Model;
+import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.IntAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
@@ -21,9 +22,11 @@ import static org.lwjgl.util.glu.GLU.*;
 
 public class Sector {
     Array<Vector2> points = new Array<Vector2>();
-
     public Sector parent = null;
     public Array<Sector> subsectors = new Array<Sector>();
+
+    public float floorHeight = 0;
+    public float ceilHeight = 2;
 
     Texture texture = new Texture(Gdx.files.internal("textures/floor1.png"));
     Material material = new Material(ColorAttribute.createDiffuse(Color.WHITE), TextureAttribute.createDiffuse(texture), IntAttribute.createCullFace(GL20.GL_FALSE));
@@ -74,7 +77,7 @@ public class Sector {
         return false;
     }
 
-    public Model tesselate() {
+    public Array<ModelInstance> tesselate() {
 
         tesselator.gluTessCallback(GLU_TESS_VERTEX, callback);
         tesselator.gluTessCallback(GLU_TESS_BEGIN, callback);
@@ -100,18 +103,27 @@ public class Sector {
         // Start building the mesh
         ModelBuilder mb = new ModelBuilder();
         mb.begin();
-
-        // Make floor / ceiling
         Model built = callback.getModel();
         mb.node("0", built);
+        Model triangulated = mb.end();
+
+        // floor
+        ModelInstance mf = new ModelInstance(triangulated);
+        mf.transform.setTranslation(0, getFloorHeight(), 0);
+
+        // ceiling
+        //ModelInstance mc = new ModelInstance(triangulated);
+        //mc.transform.setTranslation(0, getCeilingHeight(), 0);
+
+        Array<ModelInstance> instances = new Array<ModelInstance>();
+        instances.add(mf);
+        //instances.add(mc);
 
         for (Sector subsector : subsectors) {
-            Model m = subsector.tesselate();
-            if(m != null)
-                mb.node(new Random().nextInt() + "", m);
+            instances.addAll(subsector.tesselate());
         }
 
-        return mb.end();
+        return instances;
     }
 
     private void tesselateContour(Sector sector, GLUtessellator tesselator, TessCallback callback) {
@@ -164,5 +176,13 @@ public class Sector {
         for(Sector s : subsectors) {
             s.translate(x, y);
         }
+    }
+
+    public float getFloorHeight() {
+        return floorHeight;
+    }
+
+    public float getCeilingHeight() {
+        return ceilHeight;
     }
 }
