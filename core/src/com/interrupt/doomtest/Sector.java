@@ -29,7 +29,7 @@ public class Sector {
     public float ceilHeight = 2;
 
     Texture texture = new Texture(Gdx.files.internal("textures/floor1.png"));
-    Material material = new Material(ColorAttribute.createDiffuse(Color.WHITE), TextureAttribute.createDiffuse(texture), IntAttribute.createCullFace(GL20.GL_FALSE));
+    Material material = new Material(ColorAttribute.createDiffuse(Color.WHITE), TextureAttribute.createDiffuse(texture));
 
     private static GLUtessellator tesselator = gluNewTess();
     TessCallback callback = new TessCallback(material);
