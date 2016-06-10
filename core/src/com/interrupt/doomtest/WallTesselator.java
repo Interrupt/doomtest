@@ -47,10 +47,7 @@ public class WallTesselator {
     private static Array<Vector3> getWallVerts(Line line) {
         Array<Vector3> wallVerts = new Array<Vector3>();
         if(line.solid) {
-            wallVerts.add(new Vector3(line.start.x, line.left.getFloorHeight(), line.start.y));
-            wallVerts.add(new Vector3(line.start.x, line.left.getCeilingHeight(), line.start.y));
-            wallVerts.add(new Vector3(line.end.x, line.left.getFloorHeight(), line.end.y));
-            wallVerts.add(new Vector3(line.end.x, line.left.getCeilingHeight(), line.end.y));
+            addSolidWallVerts(wallVerts, line);
         }
         else if(line.right != null) {
             if (line.left.getFloorHeight() != line.right.getFloorHeight()) {
@@ -69,10 +66,22 @@ public class WallTesselator {
         return wallVerts;
     }
 
+    private static void addSolidWallVerts(Array<Vector3> wallVerts, Line line) {
+        Sector in = line.left;
+        if(line.left.isSolid && line.right != null) {
+            in = line.right;
+        }
+        wallVerts.add(new Vector3(line.start.x, in.getFloorHeight(), line.start.y));
+        wallVerts.add(new Vector3(line.start.x, in.getCeilingHeight(), line.start.y));
+        wallVerts.add(new Vector3(line.end.x, in.getFloorHeight(), line.end.y));
+        wallVerts.add(new Vector3(line.end.x, in.getCeilingHeight(), line.end.y));
+    }
+
     private static Array<Vector2> getWallUVs(Line line) {
         float lineLength = line.getLength();
 
         float sectorHeight = line.left.getCeilingHeight() - line.left.getFloorHeight();
+        if(line.left.isSolid && line.right != null) sectorHeight = line.right.getCeilingHeight() - line.right.getFloorHeight();
 
         if(!line.solid && line.right != null) {
             sectorHeight = line.right.getFloorHeight() - line.left.getFloorHeight();

@@ -9,7 +9,6 @@ import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.utils.MeshBuilder;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
-import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.utils.Array;
 import org.lwjgl.util.glu.GLUtessellatorCallbackAdapter;
 
@@ -22,9 +21,17 @@ public class TessCallback extends GLUtessellatorCallbackAdapter {
     int currentType;
     int parts = 0;
 
-    public TessCallback() {
-        modelBuilder.begin();
+    public class MeshPiece {
+        public int drawType;
+        public Mesh mesh;
+
+        MeshPiece(int drawType, Mesh mesh) {
+            this.drawType = drawType;
+            this.mesh = mesh;
+        }
     }
+
+    public Array<MeshPiece> meshPieces = new Array<MeshPiece>();
 
     public TessCallback(Material material) {
         modelBuilder.begin();
@@ -54,11 +61,13 @@ public class TessCallback extends GLUtessellatorCallbackAdapter {
         VertexAttributes attributes = new VertexAttributes(VertexAttribute.Position(), VertexAttribute.TexCoords(0));
 
         MeshBuilder meshBuilder = new MeshBuilder();
+
         meshBuilder.begin(attributes);
         meshBuilder.addMesh(getVertices(), getIndices());
-        Mesh mesh = meshBuilder.end();
+        Mesh m = meshBuilder.end();
+        modelBuilder.part(parts + "", m, currentType, material);
 
-        modelBuilder.part(parts + "", mesh, currentType, material);
+        meshPieces.add(new MeshPiece(currentType, m));
 
         data.clear();
     }
@@ -66,9 +75,6 @@ public class TessCallback extends GLUtessellatorCallbackAdapter {
     public void vertex(Object vertexData) {
         VertexData vertex = (VertexData) vertexData;
         data.add(vertex);
-
-        /*glVertex3d(vertex.data[0], vertex.data[1], vertex.data[2]);
-        glColor3d(vertex.data[3], vertex.data[4], vertex.data[5]);*/
     }
 
     private float[] getVertices() {

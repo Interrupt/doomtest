@@ -188,10 +188,14 @@ public class DoomTestGame extends ApplicationAdapter {
 
                         current = new Sector();
 
-                        if (parent != null)
+                        if (parent != null) {
                             parent.addSubSector(current);
-                        else
+                            current.floorHeight = parent.floorHeight;
+                            current.ceilHeight = parent.ceilHeight;
+                        }
+                        else {
                             sectors.add(current);
+                        }
                     } else {
                         if (current.parent == null && !vertexExists(new Vector2(pickedGridPoint.x, pickedGridPoint.z)))
                             if (hoveredSector != null) current.parent = hoveredSector;
@@ -344,11 +348,9 @@ public class DoomTestGame extends ApplicationAdapter {
             if(existing.left != current) {
                 existing.solid = false;
                 existing.right = current;
+                current.floorHeight = existing.left.floorHeight;
+                current.ceilHeight = existing.left.ceilHeight;
             }
-            /*if(existing.left != current && existing.left != current.parent) {
-                existing.solid = false;
-                existing.right = current;
-            }*/
         }
     }
 
