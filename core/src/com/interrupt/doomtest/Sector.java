@@ -14,11 +14,8 @@ import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import org.lwjgl.util.glu.GLUtessellator;
-
-import java.util.Random;
 
 import static org.lwjgl.util.glu.GLU.*;
 
@@ -38,11 +35,6 @@ public class Sector {
     Material ceilingMaterial = new Material(ColorAttribute.createDiffuse(Color.WHITE), TextureAttribute.createDiffuse(getTexture("textures/ceiling1.png")), IntAttribute.createCullFace(GL20.GL_FRONT));
 
     public Sector() { }
-
-    public Sector(boolean isSolid) {
-        super();
-        this.isSolid = isSolid;
-    }
 
     public void addVertex(Vector2 vertex) {
         points.add(vertex);
@@ -105,28 +97,14 @@ public class Sector {
         }
 
         // Start building the mesh
-        ModelBuilder mb = new ModelBuilder();
-        mb.begin();
-        Model built = callback.getModel();
         Array<TessCallback.MeshPiece> meshPieces = callback.meshPieces;
-        mb.node("floor", built);
-        Model triangulated = mb.end();
 
         Model model = makeModelFromMeshPieces(meshPieces);
         ModelInstance mi = new ModelInstance(model);
         mi.transform.setTranslation(0, getFloorHeight(), 0);
 
-        // floor
-        //ModelInstance mf = new ModelInstance(triangulated);
-        //mf.transform.setTranslation(0, getFloorHeight(), 0);
-
-        // ceiling
-        //ModelInstance mc = new ModelInstance(triangulated);
-        //mc.transform.setTranslation(0, getCeilingHeight(), 0);
-
         Array<ModelInstance> instances = new Array<ModelInstance>();
         instances.add(mi);
-        //instances.add(mc);
 
         for (Sector subsector : subsectors) {
             instances.addAll(subsector.tesselate());
