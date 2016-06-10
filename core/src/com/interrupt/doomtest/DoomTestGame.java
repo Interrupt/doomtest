@@ -326,6 +326,19 @@ public class DoomTestGame extends ApplicationAdapter {
             //current.addVertex(startPoint);
             addLine(lastPoint, startPoint);
         }
+
+        if(!isClockwise(current)) current.points.reverse();
+    }
+
+    public boolean isClockwise(Sector s) {
+        // (x2 − x1)(y2 + y1)
+        float sum = 0;
+        for(int i = 0; i < s.points.size - 1; i++) {
+            Vector2 start = s.points.get(i);
+            Vector2 end = s.points.get(i + 1);
+            sum += (end.x - start.x) * (end.y + start.y);
+        }
+        return sum > 0;
     }
 
     public void addLine(Vector2 start, Vector2 end) {
