@@ -201,24 +201,32 @@ public class Sector {
     }
 
     public boolean isPointInside(Vector2 point) {
+        if(getPoints().contains(point, false)) return true;
         return Intersector.isPointInPolygon(getPoints(), point);
     }
 
     public boolean isSectorInside(Sector other) {
         for(Vector2 p : other.getPoints()) {
-            if(!Intersector.isPointInPolygon(getPoints(), p)) return false;
+            if(!isPointInside(p)) return false;
         }
         return true;
     }
 
     public void translate(float x, float y) {
-        for(Vector2 point : getPoints()) {
+        for(Vector2 point : getAllPoints()) {
             point.add(x, y);
         }
+    }
 
+    public Array<Vector2> getAllPoints() {
+        Array<Vector2> all = new Array<Vector2>();
+        all.addAll(getPoints());
         for(Sector s : subsectors) {
-            s.translate(x, y);
+            for(Vector2 p : s.getAllPoints()) {
+                if(!all.contains(p, true)) all.add(p);
+            }
         }
+        return all;
     }
 
     public float getFloorHeight() {
