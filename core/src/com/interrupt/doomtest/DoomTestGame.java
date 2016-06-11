@@ -158,53 +158,22 @@ public class DoomTestGame extends ApplicationAdapter {
                 if (Gdx.input.justTouched()) {
 
                     Vector2 next = new Vector2(pickedGridPoint.x, pickedGridPoint.z);
-
-                    // might have started on the edge and clicked inside of a sector
-                    if (current != null && current.parent == null && current.points.size == 1) {
-                        Vector2 start = current.points.first();
-                        Sector found = null;
-                        for (Sector s : sectors) {
-                            if (s != current && s.hasVertex(start) && s.isPointInside(next)) {
-                                found = s;
-                                break;
-                            }
-                        }
-
-                        if (found != null) {
-                            sectors.removeValue(current, true);
-                            found.addSubSector(current);
-                        }
-                    }
+                    Vector2 existing = getExistingVertex(next);
 
                     // Start a new sector if not currently editing one
                     if (current == null) {
-                        // This sector might have a parent sector
-                        Sector parent = pickSector(next);
-
-                        // Don't pick a parent right away if this vertex exists already
-                        if (vertexExists(new Vector2(pickedGridPoint.x, pickedGridPoint.z))) {
-                            parent = null;
-                        }
-
                         current = new Sector();
-
-                        if (parent != null) {
-                            parent.addSubSector(current);
-                            current.floorHeight = parent.floorHeight;
-                            current.ceilHeight = parent.ceilHeight;
-                        }
-                        else {
-                            sectors.add(current);
-                        }
-                    } else {
-                        if (current.parent == null && !vertexExists(new Vector2(pickedGridPoint.x, pickedGridPoint.z)))
-                            if (hoveredSector != null) current.parent = hoveredSector;
                     }
 
-                    if (isValidSectorForNextPoint(pickedGridPoint))
-                        addVertex(pickedGridPoint.x, pickedGridPoint.z);
-
-                    refreshSectors();
+                    // finish the sector automatically if the line loops
+                    if(current.getPoints().size > 0 && next.equals(current.getPoints().first())) {
+                        finishSector();
+                        refreshSectors();
+                        current = null;
+                    }
+                    else {
+                        current.addVertex(existing != null ? existing : next);
+                    }
                 }
 
                 // Cancel the current sector
@@ -301,33 +270,34 @@ public class DoomTestGame extends ApplicationAdapter {
         return null;
     }
 
-    public void addVertex(float x, float y) {
-        if(current != null) {
-            Vector2 next = new Vector2(x, y);
-            Vector2 existing = getExistingVertex(next);
-
-            // use the existing vertex if found, or save a new one
-            if(existing != null) next = existing;
-            else vertices.add(next);
-
-            current.addVertex(next);
-
-            // todo: fix!
-            Vector2 previous = current.points.get(current.points.size - 2);
-            addLine(previous, next);
-        }
+    public void addVertex(Vector2 vertex) {
+        Vector2 existing = getExistingVertex(vertex);
+        if(existing == null) vertices.add(vertex);
     }
 
     public void finishSector() {
-        Vector2 startPoint = current.getPoints().first();
-        Vector2 lastPoint = current.getPoints().get(current.getPoints().size - 1);
+        if(!isClockwise(current)) current.points.reverse();
 
+        // add vertices and lines for the new sector
+        Array<Vector2> points = current.getPoints();
+        for(int i = 0; i < points.size; i++) {
+            Vector2 p = points.get(i);
+            addVertex(p);
+
+            if(i > 0) {
+                Vector2 prev = points.get(i - 1);
+                addLine(prev, p);
+            }
+        }
+
+        // close the loop, if it isn't
+        Vector2 startPoint = points.first();
+        Vector2 lastPoint = points.get(points.size - 1);
         if (!lastPoint.equals(startPoint)) {
-            //current.addVertex(startPoint);
             addLine(lastPoint, startPoint);
         }
 
-        if(!isClockwise(current)) current.points.reverse();
+        sectors.add(current);
     }
 
     public boolean isClockwise(Sector s) {
@@ -343,7 +313,11 @@ public class DoomTestGame extends ApplicationAdapter {
 
     public void addLine(Vector2 start, Vector2 end) {
 
-        Line line = new Line(start, end, current.parent == null, current, current.parent);
+        // don't duplicate verts
+        Vector2 existingStart = getExistingVertex(start);
+        Vector2 existingEnd = getExistingVertex(end);
+
+        Line line = new Line(existingStart, existingEnd, current.parent == null, current, current.parent);
 
         // check if this exists already
         Line existing = null;
@@ -355,7 +329,7 @@ public class DoomTestGame extends ApplicationAdapter {
         }
 
         if(existing == null) {
-            lines.add(new Line(start, end, current.parent == null, current, current.parent));
+            lines.add(line);
         }
         else {
             if(existing.left != current) {
@@ -390,9 +364,15 @@ public class DoomTestGame extends ApplicationAdapter {
                 renderPoints(sector);
             }
 
+
             if(editorMode == EditorModes.SECTOR) {
                 renderNextLine();
                 renderNextPoint();
+
+                if(current != null) {
+                    renderSectorWireframe(current);
+                    renderPoints(current);
+                }
             }
             else if(editorMode == EditorModes.POINT) {
                 if(pickedPoint != null) {
