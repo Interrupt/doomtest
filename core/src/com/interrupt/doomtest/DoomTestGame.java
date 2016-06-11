@@ -168,8 +168,6 @@ public class DoomTestGame extends ApplicationAdapter {
                     // finish the sector automatically if the line loops
                     if(current.getPoints().size > 0 && next.equals(current.getPoints().first())) {
                         finishSector();
-                        refreshSectors();
-                        current = null;
                     }
                     else {
                         current.addVertex(existing != null ? existing : next);
@@ -184,8 +182,6 @@ public class DoomTestGame extends ApplicationAdapter {
                 // Finish current sector
                 if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
                     finishSector();
-                    current = null;
-                    refreshSectors();
                 }
             }
             else if (editorMode == EditorModes.POINT) {
@@ -278,6 +274,18 @@ public class DoomTestGame extends ApplicationAdapter {
     public void finishSector() {
         if(!isClockwise(current)) current.points.reverse();
 
+        // find the parent, if there is one
+        Sector parent = null;
+        for(Sector s : sectors) {
+            Sector containing = s.getSectorOfSector(current);
+            if(containing != null) parent = containing;
+        }
+        if(parent != null) {
+            parent.addSubSector(current);
+            current.floorHeight = parent.floorHeight;
+            current.ceilHeight = parent.ceilHeight;
+        }
+
         // add vertices and lines for the new sector
         Array<Vector2> points = current.getPoints();
         for(int i = 0; i < points.size; i++) {
@@ -297,7 +305,11 @@ public class DoomTestGame extends ApplicationAdapter {
             addLine(lastPoint, startPoint);
         }
 
-        sectors.add(current);
+        if(parent == null)
+            sectors.add(current);
+
+        current = null;
+        refreshSectors();
     }
 
     public boolean isClockwise(Sector s) {

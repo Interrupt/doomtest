@@ -71,10 +71,20 @@ public class WallTesselator {
         if(line.left.isSolid && line.right != null) {
             in = line.right;
         }
-        wallVerts.add(new Vector3(line.start.x, in.getFloorHeight(), line.start.y));
-        wallVerts.add(new Vector3(line.start.x, in.getCeilingHeight(), line.start.y));
-        wallVerts.add(new Vector3(line.end.x, in.getFloorHeight(), line.end.y));
-        wallVerts.add(new Vector3(line.end.x, in.getCeilingHeight(), line.end.y));
+
+        // point wall outside, if there is a parent
+        if(line.right == null) {
+            wallVerts.add(new Vector3(line.start.x, in.getFloorHeight(), line.start.y));
+            wallVerts.add(new Vector3(line.start.x, in.getCeilingHeight(), line.start.y));
+            wallVerts.add(new Vector3(line.end.x, in.getFloorHeight(), line.end.y));
+            wallVerts.add(new Vector3(line.end.x, in.getCeilingHeight(), line.end.y));
+        }
+        else {
+            wallVerts.add(new Vector3(line.end.x, in.getFloorHeight(), line.end.y));
+            wallVerts.add(new Vector3(line.end.x, in.getCeilingHeight(), line.end.y));
+            wallVerts.add(new Vector3(line.start.x, in.getFloorHeight(), line.start.y));
+            wallVerts.add(new Vector3(line.start.x, in.getCeilingHeight(), line.start.y));
+        }
     }
 
     private static Array<Vector2> getWallUVs(Line line) {
