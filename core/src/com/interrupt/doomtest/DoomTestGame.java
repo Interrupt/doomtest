@@ -47,9 +47,12 @@ public class DoomTestGame extends ApplicationAdapter {
     Sector pickedSector = null;
     Vector2 pickedPoint = null;
 
-    public enum EditorModes { SECTOR, POINT };
+    public enum EditorModes { SECTOR, POINT, SPLIT };
 
     public EditorModes editorMode = EditorModes.SECTOR;
+
+    public Vector2 splitStart = null;
+    public Vector2 splitEnd = null;
 
 	@Override
 	public void create () {
@@ -204,6 +207,48 @@ public class DoomTestGame extends ApplicationAdapter {
                     }
                 }
             }
+            else if (editorMode == EditorModes.SPLIT) {
+                pickedPoint2d.x = (int) pickedPoint2d.x;
+                pickedPoint2d.y = (int) pickedPoint2d.y;
+                if(Gdx.input.justTouched()) {
+                    splitStart = new Vector2(pickedPoint2d);
+                    splitEnd = new Vector2(pickedPoint2d);
+                }
+                else if(Gdx.input.isTouched()) {
+                    splitEnd.set(pickedPoint2d);
+                }
+                else if(Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
+                    // finish the split
+                    Array<Sector> toRemove = new Array<Sector>();
+                    Array<Sector> newSplits = new Array<Sector>();
+                    for(Sector s : sectors) {
+                        Array<Sector> splits =
+                                s.split(new Plane(
+                                        new Vector3(splitStart.x, 0 , splitStart.y),
+                                        new Vector3(splitEnd.x, 0, splitEnd.y),
+                                        new Vector3(splitEnd.x, 1, splitEnd.y)));
+
+                        if(splits.size > 0) {
+                            toRemove.add(s);
+                            for(Sector split : splits) {
+                                newSplits.add(split);
+                            }
+                        }
+                    }
+
+                    // remove the old, unsplit sector
+                    for(Sector s : toRemove) {
+                        sectors.removeValue(s, true);
+                    }
+
+                    // add the new splits
+                    for(Sector s : newSplits) {
+                        sectors.add(s);
+                    }
+
+                    refreshSectors();
+                }
+            }
         }
 
         if(Gdx.input.isKeyJustPressed(Input.Keys.P)) {
@@ -214,6 +259,17 @@ public class DoomTestGame extends ApplicationAdapter {
             }
             else {
                 editorMode = EditorModes.SECTOR;
+            }
+        }
+
+        if(Gdx.input.isKeyJustPressed(Input.Keys.O)) {
+            if(current != null) cancelEditingSector();
+
+            if(editorMode == EditorModes.SPLIT) {
+                editorMode = EditorModes.SECTOR;
+            }
+            else {
+                editorMode = EditorModes.SPLIT;
             }
         }
     }
@@ -398,6 +454,20 @@ public class DoomTestGame extends ApplicationAdapter {
                     lineRenderer.begin(ShapeRenderer.ShapeType.Filled);
                     lineRenderer.setColor(Color.RED);
                     lineRenderer.box(pickedPoint.x - pointSize / 2, 0, pickedPoint.y + pointSize / 2, pointSize, pointSize / 3, pointSize);
+                    lineRenderer.end();
+                }
+            }
+            else if(editorMode == EditorModes.SPLIT) {
+                if(splitStart != null && splitEnd != null) {
+                    lineRenderer.begin(ShapeRenderer.ShapeType.Line);
+                    lineRenderer.setColor(Color.RED);
+                    lineRenderer.line(splitStart.x, 0, splitStart.y, splitEnd.x, 0, splitEnd.y);
+                    lineRenderer.end();
+
+                    float pointSize = 0.2f;
+                    lineRenderer.begin(ShapeRenderer.ShapeType.Filled);
+                    lineRenderer.setColor(Color.RED);
+                    lineRenderer.box(pickedPoint2d.x - pointSize / 2, 0, pickedPoint2d.y + pointSize / 2, pointSize, pointSize / 3, pointSize);
                     lineRenderer.end();
                 }
             }

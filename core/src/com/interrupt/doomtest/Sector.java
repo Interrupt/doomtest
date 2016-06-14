@@ -11,9 +11,7 @@ import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.IntAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
-import com.badlogic.gdx.math.Intersector;
-import com.badlogic.gdx.math.Matrix4;
-import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.math.*;
 import com.badlogic.gdx.utils.Array;
 import org.lwjgl.util.glu.GLUtessellator;
 
@@ -237,5 +235,59 @@ public class Sector {
 
     public float getCeilingHeight() {
         return ceilHeight;
+    }
+
+    public Array<Sector> split(Plane plane) {
+        Array<Vector2> frontPoints = new Array<Vector2>();
+        Array<Vector2> backPoints = new Array<Vector2>();
+        Plane.PlaneSide lastSide = null;
+
+        for(int i = 0; i < points.size; i++) {
+            Vector2 p = points.get(i);
+            Vector3 p3 = new Vector3(p.x, 0, p.y);
+            Plane.PlaneSide side = plane.testPoint(p3);
+            boolean onFront = (side == Plane.PlaneSide.Front || side == Plane.PlaneSide.OnPlane);
+
+            //todo: add extra points by intersecting with plane
+            if(lastSide != null && lastSide != side) {
+                //Intersector.pointLineSide()
+                Vector3 intersection = new Vector3();
+                Vector2 last = points.get(i - 1);
+                if(Intersector.intersectLinePlane(p.x, 0, p.y, last.x, 0, last.y, plane, intersection) >= 0) {
+                    Vector2 newPoint = new Vector2(intersection.x, intersection.z);
+                    frontPoints.add(newPoint);
+                    backPoints.add(newPoint);
+                }
+            }
+
+            if(onFront) {
+                frontPoints.add(p);
+            }
+            else {
+                backPoints.add(p);
+            }
+
+            lastSide = side;
+        }
+
+        Sector front = new Sector();
+        front.floorHeight = floorHeight;
+        front.ceilHeight = ceilHeight;
+        for(Vector2 p : frontPoints) {
+            front.addVertex(p);
+        }
+
+        Sector back = new Sector();
+        back.floorHeight = floorHeight;
+        back.ceilHeight = ceilHeight;
+        for(Vector2 p : backPoints) {
+            back.addVertex(p);
+        }
+
+        Array<Sector> sectors = new Array<Sector>();
+        if(front.points.size > 0) sectors.add(front);
+        if(back.points.size > 0) sectors.add(back);
+
+        return sectors;
     }
 }
