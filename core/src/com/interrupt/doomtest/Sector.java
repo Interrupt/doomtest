@@ -82,6 +82,8 @@ public class Sector {
 
         tesselator.gluTessProperty(GLU_TESS_WINDING_RULE, GLU_TESS_WINDING_ODD);
 
+        tesselator.gluTessNormal(0, 1, 0);
+
         if (!isSolid) {
             tesselator.gluTessBeginPolygon(null);
 

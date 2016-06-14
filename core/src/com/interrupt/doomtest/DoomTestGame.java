@@ -313,14 +313,20 @@ public class DoomTestGame extends ApplicationAdapter {
     }
 
     public boolean isClockwise(Sector s) {
-        // (x2 − x1)(y2 + y1)
+        // sum of (x2 − x1)(y2 + y1)
         float sum = 0;
         for(int i = 0; i < s.points.size - 1; i++) {
             Vector2 start = s.points.get(i);
             Vector2 end = s.points.get(i + 1);
             sum += (end.x - start.x) * (end.y + start.y);
         }
-        return sum > 0;
+
+        // close the loop
+        Vector2 start = s.points.get(s.points.size - 1);
+        Vector2 end = s.points.get(0);
+        sum += (end.x - start.x) * (end.y + start.y);
+
+        return sum >= 0;
     }
 
     public void addLine(Vector2 start, Vector2 end) {
