@@ -238,56 +238,53 @@ public class Sector {
     }
 
     public Array<Sector> split(Plane plane) {
-        Array<Vector2> frontPoints = new Array<Vector2>();
-        Array<Vector2> backPoints = new Array<Vector2>();
         Plane.PlaneSide lastSide = null;
+        Array<Sector> newSectors = new Array<Sector>();
+        Sector current = null;
+        Integer firstIndex = null;
 
-        for(int i = 0; i < points.size; i++) {
-            Vector2 p = points.get(i);
+        // find the first crossing
+        // when we do, start adding to a new sector
+        // start and end sectors where they cross the plane
+        // make new sectors as we cross
+        for(int i = 0; i <= points.size; i++) {
+            Vector2 p = points.get(i % points.size);
             Vector3 p3 = new Vector3(p.x, 0, p.y);
             Plane.PlaneSide side = plane.testPoint(p3);
-            boolean onFront = (side == Plane.PlaneSide.Front || side == Plane.PlaneSide.OnPlane);
 
-            //todo: add extra points by intersecting with plane
             if(lastSide != null && lastSide != side) {
-                //Intersector.pointLineSide()
                 Vector3 intersection = new Vector3();
-                Vector2 last = points.get(i - 1);
+                Vector2 last = points.get((i - 1) % points.size);
                 if(Intersector.intersectLinePlane(p.x, 0, p.y, last.x, 0, last.y, plane, intersection) >= 0) {
+                    if(firstIndex == null)
+                        firstIndex = i;
+
                     Vector2 newPoint = new Vector2(intersection.x, intersection.z);
-                    frontPoints.add(newPoint);
-                    backPoints.add(newPoint);
+
+                    if(current != null)
+                        current.addVertex(newPoint);
+
+                    current = new Sector();
+                    current.addVertex(newPoint);
+                    newSectors.add(current);
                 }
             }
 
-            if(onFront) {
-                frontPoints.add(p);
-            }
-            else {
-                backPoints.add(p);
-            }
+            if(current != null)
+                current.addVertex(p);
 
             lastSide = side;
         }
 
-        Sector front = new Sector();
-        front.floorHeight = floorHeight;
-        front.ceilHeight = ceilHeight;
-        for(Vector2 p : frontPoints) {
-            front.addVertex(p);
+        // fill in to where we started
+        if(firstIndex != null && current != null) {
+            for(int i = 0; i < firstIndex; i++) {
+                Vector2 p = points.get(i);
+                current.addVertex(p);
+            }
+            current.addVertex(newSectors.get(0).getPoints().get(0));
         }
 
-        Sector back = new Sector();
-        back.floorHeight = floorHeight;
-        back.ceilHeight = ceilHeight;
-        for(Vector2 p : backPoints) {
-            back.addVertex(p);
-        }
-
-        Array<Sector> sectors = new Array<Sector>();
-        if(front.points.size > 0) sectors.add(front);
-        if(back.points.size > 0) sectors.add(back);
-
-        return sectors;
+        return newSectors;
     }
 }
