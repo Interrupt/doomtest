@@ -237,7 +237,13 @@ public class Sector {
         return ceilHeight;
     }
 
-    public Array<Sector> split(Plane plane) {
+    public Vector2 getExistingVertex(Vector2 vertex, Array<Vector2> vertices) {
+        int found = vertices.indexOf(vertex, false);
+        if(found >= 0) return vertices.get(found);
+        return null;
+    }
+
+    public Array<Sector> split(Plane plane, Array<Vector2> worldPoints) {
         Plane.PlaneSide lastSide = null;
         Array<Sector> newSectors = new Array<Sector>();
         Sector current = null;
@@ -259,7 +265,15 @@ public class Sector {
                     if(firstIndex == null)
                         firstIndex = i;
 
-                    Vector2 newPoint = new Vector2(intersection.x, intersection.z);
+                    // round to weld verts
+                    Vector2 newPoint = new Vector2((int)(intersection.x * 100) / 100f, (int)(intersection.z * 100) / 100f);
+
+                    // dedupe!
+                    Vector2 existing = getExistingVertex(newPoint, worldPoints);
+                    if(existing != null)
+                        newPoint = existing;
+                    else
+                        worldPoints.add(newPoint);
 
                     if(current != null)
                         current.addVertex(newPoint);

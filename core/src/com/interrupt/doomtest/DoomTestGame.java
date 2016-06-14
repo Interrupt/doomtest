@@ -226,7 +226,8 @@ public class DoomTestGame extends ApplicationAdapter {
                                 s.split(new Plane(
                                         new Vector3(splitStart.x, 0 , splitStart.y),
                                         new Vector3(splitEnd.x, 0, splitEnd.y),
-                                        new Vector3(splitEnd.x, 1, splitEnd.y)));
+                                        new Vector3(splitEnd.x, 1, splitEnd.y)),
+                                        vertices);
 
                         if(splits.size > 0) {
                             toRemove.add(s);
