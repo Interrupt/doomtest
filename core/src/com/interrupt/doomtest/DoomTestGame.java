@@ -231,6 +231,14 @@ public class DoomTestGame extends ApplicationAdapter {
                             l.end = i;
                             Line newLine = new Line(i, oldEnd, l.solid, l.left, l.right);
                             newLines.add(newLine);
+
+                            for(int s = 0; s < l.left.points.size; s++) {
+                                Vector2 p = l.left.points.get(s);
+                                if(p == l.start) {
+                                    l.left.points.insert(s + 1, i);
+                                    break;
+                                }
+                            }
                         }
                     }
 
