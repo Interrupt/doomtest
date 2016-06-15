@@ -1,5 +1,6 @@
 package com.interrupt.doomtest;
 
+import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.Vector2;
 
 public class Line {
@@ -38,5 +39,13 @@ public class Line {
         if(other.end.equals(start) && other.start.equals(end))
             return true;
         return false;
+    }
+
+    public Vector2 findIntersection(Vector2 s, Vector2 e) {
+        Vector2 intersection = new Vector2();
+        if(Intersector.intersectSegments(s, e, this.start, this.end, intersection)) {
+            return intersection;
+        }
+        return null;
     }
 }

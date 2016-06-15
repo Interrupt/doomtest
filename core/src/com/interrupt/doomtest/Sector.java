@@ -247,7 +247,9 @@ public class Sector {
         Plane.PlaneSide lastSide = null;
         Array<Sector> newSectors = new Array<Sector>();
         Sector current = null;
+        Sector lastSector = null;
         Integer firstIndex = null;
+        int crossings = 0;
 
         // find the first crossing
         // when we do, start adding to a new sector
@@ -262,6 +264,8 @@ public class Sector {
                 Vector3 intersection = new Vector3();
                 Vector2 last = points.get((i - 1) % points.size);
                 if(Intersector.intersectLinePlane(p.x, 0, p.y, last.x, 0, last.y, plane, intersection) >= 0) {
+                    crossings++;
+
                     if(firstIndex == null)
                         firstIndex = i;
 
@@ -278,9 +282,19 @@ public class Sector {
                     if(current != null)
                         current.addVertex(newPoint);
 
-                    current = new Sector();
-                    current.addVertex(newPoint);
-                    newSectors.add(current);
+                    if(crossings % 2 == 1 && lastSector != null) {
+                        current = lastSector;
+                        current.addVertex(newPoint);
+                        lastSector = null;
+                    }
+                    else {
+                        lastSector = current;
+                        current = new Sector();
+                        current.floorHeight = floorHeight;
+                        current.ceilHeight = ceilHeight;
+                        current.addVertex(newPoint);
+                        newSectors.add(current);
+                    }
                 }
             }
 
@@ -300,5 +314,9 @@ public class Sector {
         }
 
         return newSectors;
+    }
+
+    public boolean lineIntersects(Vector2 start, Vector2 end) {
+        return isPointInside(start) || isPointInside(end);
     }
 }

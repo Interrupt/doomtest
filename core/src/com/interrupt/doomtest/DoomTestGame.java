@@ -221,30 +221,21 @@ public class DoomTestGame extends ApplicationAdapter {
                     // finish the split
                     Array<Sector> toRemove = new Array<Sector>();
                     Array<Sector> newSplits = new Array<Sector>();
-                    for(Sector s : sectors) {
-                        Array<Sector> splits =
-                                s.split(new Plane(
-                                        new Vector3(splitStart.x, 0 , splitStart.y),
-                                        new Vector3(splitEnd.x, 0, splitEnd.y),
-                                        new Vector3(splitEnd.x, 1, splitEnd.y)),
-                                        vertices);
 
-                        if(splits.size > 0) {
-                            toRemove.add(s);
-                            for(Sector split : splits) {
-                                newSplits.add(split);
-                            }
+                    Array<Line> newLines = new Array<Line>();
+
+                    for(Line l : lines) {
+                        Vector2 i = l.findIntersection(splitStart, splitEnd);
+                        if(i != null) {
+                            Vector2 oldEnd = l.end;
+                            l.end = i;
+                            Line newLine = new Line(i, oldEnd, l.solid, l.left, l.right);
+                            newLines.add(newLine);
                         }
                     }
 
-                    // remove the old, unsplit sector
-                    for(Sector s : toRemove) {
-                        sectors.removeValue(s, true);
-                    }
-
-                    // add the new splits
-                    for(Sector s : newSplits) {
-                        sectors.add(s);
+                    for(Line l : newLines) {
+                        lines.add(l);
                     }
 
                     refreshSectors();
@@ -273,6 +264,40 @@ public class DoomTestGame extends ApplicationAdapter {
                 editorMode = EditorModes.SPLIT;
             }
         }
+    }
+
+    private void splitSectors(Vector2 start, Vector2 end) {
+        Array<Sector> toRemove = new Array<Sector>();
+        Array<Sector> newSplits = new Array<Sector>();
+        for(Sector s : sectors) {
+            if(s.lineIntersects(start, end)) {
+                Array<Sector> splits =
+                        s.split(new Plane(
+                                        new Vector3(start.x, 0, start.y),
+                                        new Vector3(end.x, 0, end.y),
+                                        new Vector3(end.x, 1, end.y)),
+                                vertices);
+
+                if (splits.size > 0) {
+                    toRemove.add(s);
+                    for (Sector split : splits) {
+                        newSplits.add(split);
+                    }
+                }
+            }
+        }
+
+        // remove the old, unsplit sector
+        for(Sector s : toRemove) {
+            sectors.removeValue(s, true);
+        }
+
+        // add the new splits
+        for(Sector s : newSplits) {
+            sectors.add(s);
+        }
+
+        refreshSectors();
     }
 
     private void cancelEditingSector() {
