@@ -157,6 +157,12 @@ public class DoomTestGame extends ApplicationAdapter {
                     refreshSectors();
                 }
 
+                Vector2 hovering = getVertexNear(intersection.x, intersection.z, 0.25f);
+                if(hovering != null) {
+                    pickedGridPoint.x = hovering.x;
+                    pickedGridPoint.z = hovering.y;
+                }
+
                 // Add a new vertex when clicked
                 if (Gdx.input.justTouched()) {
 
@@ -189,11 +195,7 @@ public class DoomTestGame extends ApplicationAdapter {
             }
             else if (editorMode == EditorModes.POINT) {
                 if(!Gdx.input.isTouched()) {
-                    pickedPoint2d.x = (int) pickedPoint2d.x;
-                    pickedPoint2d.y = (int) pickedPoint2d.y;
-
-                    // todo: better vertex picking
-                    pickedPoint = getExistingVertex(pickedPoint2d);
+                    pickedPoint = getVertexNear(intersection.x, intersection.z, 0.25f);
                     if(pickedPoint == null && hoveredSector != null) pickedSector = hoveredSector;
                 }
                 else {
@@ -227,6 +229,9 @@ public class DoomTestGame extends ApplicationAdapter {
                     for(Line l : lines) {
                         Vector2 i = l.findIntersection(splitStart, splitEnd);
                         if(i != null) {
+                            // make a new vertex
+                            vertices.add(i);
+
                             Vector2 oldEnd = l.end;
                             l.end = i;
                             Line newLine = new Line(i, oldEnd, l.solid, l.left, l.right);
@@ -272,6 +277,16 @@ public class DoomTestGame extends ApplicationAdapter {
                 editorMode = EditorModes.SPLIT;
             }
         }
+    }
+
+    private Vector2 getVertexNear(float x, float y, float distance) {
+        for(Vector2 v : vertices) {
+            float d = v.dst(x, y);
+            if(d < distance) {
+                return v;
+            }
+        }
+        return null;
     }
 
     private void splitSectors(Vector2 start, Vector2 end) {
