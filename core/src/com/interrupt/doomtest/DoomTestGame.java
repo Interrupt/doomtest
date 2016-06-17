@@ -385,10 +385,13 @@ public class DoomTestGame extends ApplicationAdapter {
             Sector containing = s.getSectorOfSector(current);
             if(containing != null) parent = containing;
         }
+
         if(parent != null) {
             parent.addSubSector(current);
             current.floorHeight = parent.floorHeight;
             current.ceilHeight = parent.ceilHeight;
+
+            refreshSectorParents(current, parent);
         }
 
         // add vertices and lines for the new sector
@@ -415,6 +418,26 @@ public class DoomTestGame extends ApplicationAdapter {
 
         current = null;
         refreshSectors();
+    }
+
+    private void refreshSectorParents(Sector sector, Sector newParent) {
+        for (Sector s : newParent.subsectors) {
+            if (s != sector && sector.isSectorInside(s)) {
+                newParent.subsectors.removeValue(s, true);
+                sector.addSubSector(s);
+
+                for(Line l : lines) {
+                    if(l.left == s || l.right == s) {
+                        if (l.right == newParent) {
+                            l.right = sector;
+                        }
+                        if (l.left == newParent) {
+                            l.left = sector;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public boolean isClockwise(Sector s) {

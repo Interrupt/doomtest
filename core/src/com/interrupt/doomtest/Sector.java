@@ -185,7 +185,7 @@ public class Sector {
     public Sector getSectorOfSector(Sector other) {
         Sector inSector = null;
         if(isSectorInside(other)) {
-            // this point is IN this sector, know it's at least here
+            // this sector is IN this sector, know it's at least here
             inSector = this;
 
             // might also be in one of the subsectors of this sector
