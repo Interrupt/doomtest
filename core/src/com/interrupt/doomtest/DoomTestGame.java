@@ -455,12 +455,15 @@ public class DoomTestGame extends ApplicationAdapter {
             lines.add(line);
         }
         else {
-            if(existing.left != current) {
+            if(existing.left == current.parent) {
+                existing.left = current;
+            }
+            else if(existing.left != current) {
                 existing.solid = false;
                 existing.right = current;
-                current.floorHeight = existing.left.floorHeight;
-                current.ceilHeight = existing.left.ceilHeight;
             }
+            current.floorHeight = existing.left.floorHeight;
+            current.ceilHeight = existing.left.ceilHeight;
         }
     }
 

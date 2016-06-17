@@ -48,4 +48,28 @@ public class Line {
         }
         return null;
     }
+
+    public Sector getHigherFloorSector() {
+        if(left == null || right == null) return null;
+        if(left.getFloorHeight() >= right.getFloorHeight()) return left;
+        return right;
+    }
+
+    public Sector getLowerFloorSector() {
+        if(left == null || right == null) return null;
+        if(left.getFloorHeight() < right.getFloorHeight()) return left;
+        return right;
+    }
+
+    public Sector getHigherCeilingSector() {
+        if(left == null || right == null) return null;
+        if(left.getCeilingHeight() >= right.getCeilingHeight()) return left;
+        return right;
+    }
+
+    public Sector getLowerCeilingSector() {
+        if(left == null || right == null) return null;
+        if(left.getCeilingHeight() < right.getCeilingHeight()) return left;
+        return right;
+    }
 }
