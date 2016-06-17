@@ -391,6 +391,7 @@ public class DoomTestGame extends ApplicationAdapter {
             current.floorHeight = parent.floorHeight;
             current.ceilHeight = parent.ceilHeight;
 
+            // parent's sectors might now be contained by this new sector
             refreshSectorParents(current, parent);
         }
 
@@ -482,7 +483,7 @@ public class DoomTestGame extends ApplicationAdapter {
                 existing.left = current;
             }
             else if(existing.left != current) {
-                existing.solid = false;
+                existing.solid = existing.left.isSolid;
                 existing.right = current;
             }
             current.floorHeight = existing.left.floorHeight;

@@ -103,15 +103,17 @@ public class WallTesselator {
         float startV = 0;
         float endV = sectorHeight;
 
-        if(!line.solid && line.right != null && line.left.getFloorHeight() > line.right.getFloorHeight()) {
-            startV = sectorHeight;
-            endV = 0;
-        }
+        if(sectorHeight != 0) {
+            if(!line.solid && line.right != null && line.left.getFloorHeight() > line.right.getFloorHeight()) {
+                startV = sectorHeight;
+                endV = 0;
+            }
 
-        wallUVs.add(new Vector2(0, startV));
-        wallUVs.add(new Vector2(0, endV));
-        wallUVs.add(new Vector2(lineLength * 0.5f, startV));
-        wallUVs.add(new Vector2(lineLength * 0.5f, endV));
+            wallUVs.add(new Vector2(0, startV));
+            wallUVs.add(new Vector2(0, endV));
+            wallUVs.add(new Vector2(lineLength * 0.5f, startV));
+            wallUVs.add(new Vector2(lineLength * 0.5f, endV));
+        }
 
         if(!line.solid && line.right != null && line.left.getCeilingHeight() != line.right.getCeilingHeight()) {
             sectorHeight = Math.abs(line.right.getCeilingHeight() - line.left.getCeilingHeight()) * -0.5f;
