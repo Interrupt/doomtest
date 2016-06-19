@@ -47,6 +47,8 @@ public class DoomTestGame extends ApplicationAdapter {
     Sector pickedSector = null;
     Vector2 pickedPoint = null;
 
+    Color wireframeColor = new Color(Color.DARK_GRAY.r, Color.DARK_GRAY.g, Color.DARK_GRAY.b, 0.2f);
+
     public enum EditorModes { SECTOR, POINT, SPLIT };
 
     public EditorModes editorMode = EditorModes.SECTOR;
@@ -194,6 +196,7 @@ public class DoomTestGame extends ApplicationAdapter {
                 }
             }
             else if (editorMode == EditorModes.POINT) {
+                // Move sectors or points
                 if(!Gdx.input.isTouched()) {
                     pickedPoint = getVertexNear(intersection.x, intersection.z, 0.25f);
                     if(pickedPoint == null && hoveredSector != null) pickedSector = hoveredSector;
@@ -207,6 +210,20 @@ public class DoomTestGame extends ApplicationAdapter {
                         pickedSector.translate((int)intersection.x - (int)lastIntersection.x, (int)intersection.z - (int)lastIntersection.z);
                         refreshSectors();
                     }
+                }
+
+                // Delete sectors or points
+                if (Gdx.input.isKeyJustPressed(Input.Keys.DEL)) {
+                    pickedPoint = getVertexNear(intersection.x, intersection.z, 0.25f);
+                    if(pickedPoint == null && hoveredSector != null) pickedSector = hoveredSector;
+
+                    if(pickedPoint != null) {
+                        deleteVertex(pickedPoint);
+                    }
+                    else if(pickedSector != null) {
+                        deleteSector(pickedSector);
+                    }
+                    refreshSectors();
                 }
             }
             else if (editorMode == EditorModes.SPLIT) {
@@ -277,6 +294,77 @@ public class DoomTestGame extends ApplicationAdapter {
                 editorMode = EditorModes.SPLIT;
             }
         }
+    }
+
+    private void deleteVertex(Vector2 vertex) {
+        for(Sector s : sectors) {
+            s.removePoint(vertex);
+        }
+
+        Array<Line> linesToDelete = new Array<Line>();
+        for(Line l : lines) {
+            if(l.end == vertex) {
+                linesToDelete.add(l);
+                Array<Line> nexts = findLinesWithStartVertexInSector(vertex, l.left);
+                for(Line next : nexts) {
+                    if (next != null) {
+                        next.start = l.start;
+                    }
+                }
+            }
+        }
+
+        lines.removeAll(linesToDelete, true);
+    }
+
+    private Array<Line> findLinesWithStartVertexInSector(Vector2 vertex, Sector sector) {
+        Array<Line> r = new Array<Line>();
+        for(int i = 0; i < lines.size; i++) {
+            Line l = lines.get(i);
+            if(l.start == vertex && l.left == sector)
+                r.add(l);
+        }
+        return r;
+    }
+
+    private void deleteLinesForSector(Sector sector) {
+        Array<Line> linesToRemove = new Array<Line>();
+
+        for(Line l : lines) {
+            if(l.left == sector) {
+                if(l.right == null) {
+                    if(sector.parent != null &&
+                            sector.parent.points.contains(l.start, true) &&
+                            sector.parent.points.contains(l.end, true)) {
+                        l.left = sector.parent;
+                    }
+                    else {
+                        linesToRemove.add(l);
+                    }
+                }
+                else {
+                    l.left = l.right;
+                    l.right = null;
+                }
+            }
+        }
+
+        lines.removeAll(linesToRemove, true);
+
+        for(Sector s : sector.subsectors) {
+            deleteLinesForSector(s);
+        }
+    }
+
+    private void deleteSector(Sector sector) {
+        if(sector.parent != null) {
+            sector.parent.subsectors.removeValue(sector, true);
+        }
+        else {
+            sectors.removeValue(sector, true);
+        }
+
+        deleteLinesForSector(sector);
     }
 
     private Vector2 getVertexNear(float x, float y, float distance) {
@@ -621,21 +709,6 @@ public class DoomTestGame extends ApplicationAdapter {
         }
     }
 
-    public void renderWalls() {
-        lineRenderer.begin(ShapeRenderer.ShapeType.Line);
-        lineRenderer.setColor(Color.GRAY);
-
-        for(Line line : lines) {
-            if(line.solid) {
-                for (int i = 1; i < 5; i++) {
-                    lineRenderer.line(line.start.x, i, line.start.y, line.end.x, i, line.end.y);
-                }
-            }
-        }
-
-        lineRenderer.end();
-    }
-
     public void renderNextPoint() {
         float pointSize = 0.2f;
         lineRenderer.begin(ShapeRenderer.ShapeType.Filled);
@@ -649,7 +722,7 @@ public class DoomTestGame extends ApplicationAdapter {
         float size = 80;
         float half = size / 2;
 
-        lineRenderer.setColor(Color.DARK_GRAY);
+        lineRenderer.setColor(wireframeColor);
 
         lineRenderer.begin(ShapeRenderer.ShapeType.Line);
         for(int i = 0; i < size; i++) {
@@ -659,9 +732,5 @@ public class DoomTestGame extends ApplicationAdapter {
             lineRenderer.line(i - half, 0, -half, i - half, 0, half);
         }
         lineRenderer.end();
-    }
-
-    public void pickVertex() {
-
     }
 }

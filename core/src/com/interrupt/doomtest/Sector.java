@@ -319,4 +319,11 @@ public class Sector {
     public boolean lineIntersects(Vector2 start, Vector2 end) {
         return isPointInside(start) || isPointInside(end);
     }
+
+    public void removePoint(Vector2 vertex) {
+        points.removeValue(vertex, true);
+        for(Sector s : subsectors) {
+            s.removePoint(vertex);
+        }
+    }
 }
