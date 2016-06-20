@@ -190,9 +190,11 @@ public class Sector {
 
             // might also be in one of the subsectors of this sector
             for(Sector subsector : subsectors) {
-                Sector found = subsector.getSectorOfSector(other);
-                if(found != null) {
-                    inSector = found;
+                if(subsector != other) {
+                    Sector found = subsector.getSectorOfSector(other);
+                    if (found != null) {
+                        inSector = found;
+                    }
                 }
             }
         }

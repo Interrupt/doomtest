@@ -46,6 +46,7 @@ public class DoomTestGame extends ApplicationAdapter {
     Sector hoveredSector = null;
     Sector pickedSector = null;
     Vector2 pickedPoint = null;
+    boolean wasDragging = false;
 
     Color wireframeColor = new Color(Color.DARK_GRAY.r, Color.DARK_GRAY.g, Color.DARK_GRAY.b, 0.2f);
 
@@ -200,6 +201,12 @@ public class DoomTestGame extends ApplicationAdapter {
                 if(!Gdx.input.isTouched()) {
                     pickedPoint = getVertexNear(intersection.x, intersection.z, 0.25f);
                     if(pickedPoint == null && hoveredSector != null) pickedSector = hoveredSector;
+
+                    if(wasDragging && pickedSector != null && pickedSector.parent != null) {
+                        refreshSectorParents(pickedSector, pickedSector.parent);
+                    }
+
+                    wasDragging = false;
                 }
                 else {
                     if(pickedPoint != null) {
@@ -208,8 +215,10 @@ public class DoomTestGame extends ApplicationAdapter {
                     }
                     else if(pickedSector != null) {
                         pickedSector.translate((int)intersection.x - (int)lastIntersection.x, (int)intersection.z - (int)lastIntersection.z);
+                        updateSectorOwnership(pickedSector);
                         refreshSectors();
                     }
+                    wasDragging = true;
                 }
 
                 // Delete sectors or points
@@ -523,6 +532,51 @@ public class DoomTestGame extends ApplicationAdapter {
                         if (l.left == newParent) {
                             l.left = sector;
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    private void updateSectorOwnership(Sector sector) {
+        Sector parent = null;
+        for(Sector s : sectors) {
+            if(s != sector && parent == null) {
+                parent = s.getSectorOfSector(sector);
+            }
+        }
+
+        if (parent != null && sector.parent != parent) {
+            if (sector.parent != null) {
+                sector.subsectors.removeValue(sector, true);
+            }
+            else {
+                sectors.removeValue(sector, true);
+            }
+
+            parent.addSubSector(sector);
+
+            for(Line l : lines) {
+                if(l.left == sector) {
+                    if(l.right == null) {
+                        l.right = parent;
+                        l.solid = false;
+                    }
+                }
+            }
+        }
+        else if(parent == null && sector.parent != null) {
+            Sector oldParent = sector.parent;
+            sector.parent.subsectors.removeValue(sector, true);
+            sector.parent = null;
+
+            sectors.add(sector);
+
+            for(Line l : lines) {
+                if(l.left == sector) {
+                    if(l.right == oldParent) {
+                        l.right = null;
+                        l.solid = true;
                     }
                 }
             }
