@@ -7,9 +7,11 @@ import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
+import com.badlogic.gdx.graphics.g3d.Attribute;
 import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
+import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.Plane;
@@ -18,6 +20,8 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.collision.Ray;
 import com.badlogic.gdx.utils.Array;
 import com.interrupt.doomtest.input.EditorCameraController;
+
+import javax.swing.text.AttributeSet;
 
 
 public class DoomTestGame extends ApplicationAdapter {
@@ -45,7 +49,13 @@ public class DoomTestGame extends ApplicationAdapter {
 
     Sector hoveredSector = null;
     Sector pickedSector = null;
+
+    Vector2 hoveredPoint = null;
     Vector2 pickedPoint = null;
+
+    Line hoveredLine = null;
+    Line pickedLine = null;
+
     boolean wasDragging = false;
 
     Color wireframeColor = new Color(Color.DARK_GRAY.r, Color.DARK_GRAY.g, Color.DARK_GRAY.b, 0.2f);
@@ -199,17 +209,38 @@ public class DoomTestGame extends ApplicationAdapter {
             else if (editorMode == EditorModes.POINT) {
                 // Move sectors or points
                 if(!Gdx.input.isTouched()) {
-                    pickedPoint = getVertexNear(intersection.x, intersection.z, 0.25f);
-                    if(pickedPoint == null && hoveredSector != null) pickedSector = hoveredSector;
-
-                    if(wasDragging && pickedSector != null && pickedSector.parent != null) {
-                        refreshSectorParents(pickedSector, pickedSector.parent);
+                    if(wasDragging) {
+                        if(pickedSector != null && pickedSector.parent != null) {
+                            refreshSectorParents(pickedSector, pickedSector.parent);
+                        }
+                        wasDragging = false;
                     }
 
-                    wasDragging = false;
+                    hoveredPoint = getVertexNear(intersection.x, intersection.z, 0.25f);
+                    if(hoveredPoint == null) hoveredLine = findPickedLine(intersection);
+                    else hoveredLine = null;
                 }
-                else {
-                    if(pickedPoint != null) {
+
+                if(Gdx.input.justTouched()) {
+                    pickedPoint = null;
+                    pickedSector = null;
+                    pickedLine = null;
+
+                    if(hoveredPoint != null) pickedPoint = hoveredPoint;
+                    else if(hoveredLine != null) pickedLine = hoveredLine;
+                    else if(hoveredSector != null) pickedSector = hoveredSector;
+
+                    setSectorHighlights();
+                    refreshSectors();
+                }
+
+                if(Gdx.input.isTouched()) {
+                    if(pickedLine != null) {
+                        pickedLine.start.add((int)intersection.x - (int)lastIntersection.x, (int)intersection.z - (int)lastIntersection.z);
+                        pickedLine.end.add((int)intersection.x - (int)lastIntersection.x, (int)intersection.z - (int)lastIntersection.z);
+                        refreshSectors();
+                    }
+                    else if(pickedPoint != null) {
                         pickedPoint.add((int)intersection.x - (int)lastIntersection.x, (int)intersection.z - (int)lastIntersection.z);
                         refreshSectors();
                     }
@@ -223,16 +254,21 @@ public class DoomTestGame extends ApplicationAdapter {
 
                 // Delete sectors or points
                 if (Gdx.input.isKeyJustPressed(Input.Keys.DEL)) {
-                    pickedPoint = getVertexNear(intersection.x, intersection.z, 0.25f);
-                    if(pickedPoint == null && hoveredSector != null) pickedSector = hoveredSector;
-
                     if(pickedPoint != null) {
                         deleteVertex(pickedPoint);
                     }
                     else if(pickedSector != null) {
                         deleteSector(pickedSector);
                     }
+                    else if(pickedLine != null) {
+                        deleteVertex(pickedLine.end);
+                    }
+
                     refreshSectors();
+
+                    pickedPoint = null;
+                    pickedSector = null;
+                    pickedLine = null;
                 }
             }
             else if (editorMode == EditorModes.SPLIT) {
@@ -303,6 +339,16 @@ public class DoomTestGame extends ApplicationAdapter {
                 editorMode = EditorModes.SPLIT;
             }
         }
+    }
+
+    Vector2 findPicked_t = new Vector2();
+    private Line findPickedLine(Vector3 hovered) {
+        for(Line l : lines) {
+            findPicked_t.set(hovered.x, hovered.z);
+            float dist = Intersector.distanceSegmentPoint(l.start, l.end, findPicked_t);
+            if(dist < 0.175f) return l;
+        }
+        return null;
     }
 
     private void deleteVertex(Vector2 vertex) {
@@ -548,17 +594,18 @@ public class DoomTestGame extends ApplicationAdapter {
 
         if (parent != null && sector.parent != parent) {
             if (sector.parent != null) {
-                sector.subsectors.removeValue(sector, true);
+                sector.parent.subsectors.removeValue(sector, true);
             }
             else {
                 sectors.removeValue(sector, true);
             }
 
+            Sector oldParent = sector.parent;
             parent.addSubSector(sector);
 
             for(Line l : lines) {
                 if(l.left == sector) {
-                    if(l.right == null) {
+                    if(l.right == null || l.right == oldParent) {
                         l.right = parent;
                         l.solid = false;
                     }
@@ -633,6 +680,23 @@ public class DoomTestGame extends ApplicationAdapter {
         }
     }
 
+    public void setSectorHighlights() {
+        for(Sector s : sectors) {
+            resetSectorHighlights(s);
+        }
+
+        // update plane colors
+        if(pickedSector != null)
+            pickedSector.floorMaterial.set(ColorAttribute.createDiffuse(Color.RED));
+    }
+
+    public void resetSectorHighlights(Sector sector) {
+        sector.floorMaterial.set(ColorAttribute.createDiffuse(Color.WHITE));
+        for(Sector s : sector.subsectors) {
+            resetSectorHighlights(s);
+        }
+    }
+
 	@Override
 	public void render () {
         try {
@@ -667,11 +731,24 @@ public class DoomTestGame extends ApplicationAdapter {
                 }
             }
             else if(editorMode == EditorModes.POINT) {
-                if(pickedPoint != null) {
+                if(pickedPoint != null || hoveredPoint != null) {
+                    Vector2 point = pickedPoint;
+                    if(point == null) point = hoveredPoint;
+
                     float pointSize = 0.2f;
                     lineRenderer.begin(ShapeRenderer.ShapeType.Filled);
                     lineRenderer.setColor(Color.RED);
-                    lineRenderer.box(pickedPoint.x - pointSize / 2, 0, pickedPoint.y + pointSize / 2, pointSize, pointSize / 3, pointSize);
+                    lineRenderer.box(point.x - pointSize / 2, 0, point.y + pointSize / 2, pointSize, pointSize / 3, pointSize);
+                    lineRenderer.end();
+                }
+
+                if(pickedLine != null || hoveredLine != null) {
+                    Line line = pickedLine;
+                    if(line == null) line = hoveredLine;
+
+                    lineRenderer.begin(ShapeRenderer.ShapeType.Line);
+                    lineRenderer.setColor(Color.RED);
+                    lineRenderer.line(line.start.x, 0, line.start.y, line.end.x, 0, line.end.y);
                     lineRenderer.end();
                 }
             }
@@ -780,10 +857,10 @@ public class DoomTestGame extends ApplicationAdapter {
 
         lineRenderer.begin(ShapeRenderer.ShapeType.Line);
         for(int i = 0; i < size; i++) {
-            lineRenderer.line(-half, 0, i - half, half, 0, i - half);
+            lineRenderer.line(-half + (int)camera.position.x, 0, i - half + (int)camera.position.z, half + (int)camera.position.x, 0, i - half + (int)camera.position.z);
         }
         for(int i = 0; i < size; i++) {
-            lineRenderer.line(i - half, 0, -half, i - half, 0, half);
+            lineRenderer.line(i - half + (int)camera.position.x, 0, -half + (int)camera.position.z, i - half + (int)camera.position.x, 0, half + (int)camera.position.z);
         }
         lineRenderer.end();
     }

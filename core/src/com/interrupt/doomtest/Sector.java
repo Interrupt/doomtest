@@ -203,6 +203,7 @@ public class Sector {
     }
 
     public boolean isPointInside(Vector2 point) {
+        if(points.size == 0) return false;
         if(getPoints().contains(point, false)) return true;
         return Intersector.isPointInPolygon(getPoints(), point);
     }
