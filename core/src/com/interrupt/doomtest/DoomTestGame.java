@@ -7,8 +7,6 @@ import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
-import com.badlogic.gdx.graphics.g3d.Attribute;
-import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
@@ -20,8 +18,6 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.collision.Ray;
 import com.badlogic.gdx.utils.Array;
 import com.interrupt.doomtest.input.EditorCameraController;
-
-import javax.swing.text.AttributeSet;
 
 
 public class DoomTestGame extends ApplicationAdapter {
@@ -282,37 +278,13 @@ public class DoomTestGame extends ApplicationAdapter {
                     splitEnd.set(pickedPoint2d);
                 }
                 else if(Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
-                    // finish the split
-                    Array<Sector> toRemove = new Array<Sector>();
-                    Array<Sector> newSplits = new Array<Sector>();
-
-                    Array<Line> newLines = new Array<Line>();
-
-                    for(Line l : lines) {
+                    Array<Line> checking = new Array<Line>(lines);
+                    for(Line l : checking) {
                         Vector2 i = l.findIntersection(splitStart, splitEnd);
                         if(i != null) {
-                            // make a new vertex
-                            vertices.add(i);
-
-                            Vector2 oldEnd = l.end;
-                            l.end = i;
-                            Line newLine = new Line(i, oldEnd, l.solid, l.left, l.right);
-                            newLines.add(newLine);
-
-                            for(int s = 0; s < l.left.points.size; s++) {
-                                Vector2 p = l.left.points.get(s);
-                                if(p == l.start) {
-                                    l.left.points.insert(s + 1, i);
-                                    break;
-                                }
-                            }
+                            addPointToLine(l, i);
                         }
                     }
-
-                    for(Line l : newLines) {
-                        lines.add(l);
-                    }
-
                     refreshSectors();
                 }
             }
@@ -337,6 +309,27 @@ public class DoomTestGame extends ApplicationAdapter {
             }
             else {
                 editorMode = EditorModes.SPLIT;
+            }
+        }
+    }
+
+    private void addPointToLine(Line l, Vector2 point) {
+        if(point == l.start || point == l.end) return;
+
+        Vector2 v = getExistingVertex(point);
+        if(v == null) vertices.add(point);
+
+        Vector2 oldEnd = l.end;
+        l.end = point;
+
+        Line newLine = new Line(point, oldEnd, l.solid, l.left, l.right);
+        lines.add(newLine);
+
+        for(int s = 0; s < l.left.points.size; s++) {
+            Vector2 p = l.left.points.get(s);
+            if(p == l.start) {
+                l.left.points.insert(s + 1, point);
+                break;
             }
         }
     }
@@ -543,6 +536,11 @@ public class DoomTestGame extends ApplicationAdapter {
         for(int i = 0; i < points.size; i++) {
             Vector2 p = points.get(i);
             addVertex(p);
+
+            Line hovered = findPickedLine(new Vector3(p.x, 0, p.y));
+            if(hovered != null) {
+                addPointToLine(hovered, p);
+            }
 
             if(i > 0) {
                 Vector2 prev = points.get(i - 1);
