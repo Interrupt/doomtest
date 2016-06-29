@@ -166,6 +166,16 @@ public class DoomTestGame extends ApplicationAdapter {
                     refreshSectors();
                 }
 
+                // snap to nearest line
+                Line nearLine = findPickedLine(intersection);
+                if(nearLine != null) {
+                    Vector2 nearest = new Vector2();
+                    Intersector.nearestSegmentPoint(nearLine.start, nearLine.end, new Vector2(intersection.x, intersection.z), nearest);
+                    pickedGridPoint.x = nearest.x;
+                    pickedGridPoint.z = nearest.y;
+                }
+
+                // snap to nearest point
                 Vector2 hovering = getVertexNear(intersection.x, intersection.z, 0.25f);
                 if(hovering != null) {
                     pickedGridPoint.x = hovering.x;
@@ -531,16 +541,20 @@ public class DoomTestGame extends ApplicationAdapter {
             refreshSectorParents(current, parent);
         }
 
+        // Add new points to existing lines / sectors where needed
+        Array<Vector2> currentPoints = new Array<Vector2>(current.getPoints());
+        for(Vector2 p : currentPoints) {
+            Line hovered = findPickedLine(new Vector3(p.x, 0, p.y));
+            if(hovered != null) {
+                addPointToLine(hovered, p);
+            }
+        }
+
         // add vertices and lines for the new sector
         Array<Vector2> points = current.getPoints();
         for(int i = 0; i < points.size; i++) {
             Vector2 p = points.get(i);
             addVertex(p);
-
-            Line hovered = findPickedLine(new Vector3(p.x, 0, p.y));
-            if(hovered != null) {
-                addPointToLine(hovered, p);
-            }
 
             if(i > 0) {
                 Vector2 prev = points.get(i - 1);
