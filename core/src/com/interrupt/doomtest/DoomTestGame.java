@@ -52,6 +52,10 @@ public class DoomTestGame extends ApplicationAdapter {
     Line hoveredLine = null;
     Line pickedLine = null;
 
+    Vector2 lastMousePoint = new Vector2();
+    public float startHeightModeFloorHeight = 0;
+    public float startHeightModeCeilHeight = 0;
+
     boolean wasDragging = false;
 
     Color wireframeColor = new Color(Color.DARK_GRAY.r, Color.DARK_GRAY.g, Color.DARK_GRAY.b, 0.2f);
@@ -238,6 +242,12 @@ public class DoomTestGame extends ApplicationAdapter {
 
                     setSectorHighlights();
                     refreshSectors();
+
+                    lastMousePoint.set(Gdx.input.getX(), Gdx.input.getY());
+                    if(pickedSector != null) {
+                        startHeightModeFloorHeight = pickedSector.floorHeight;
+                        startHeightModeCeilHeight = pickedSector.ceilHeight;
+                    }
                 }
 
                 if(Gdx.input.isTouched()) {
@@ -251,8 +261,23 @@ public class DoomTestGame extends ApplicationAdapter {
                         refreshSectors();
                     }
                     else if(pickedSector != null) {
-                        pickedSector.translate((int)intersection.x - (int)lastIntersection.x, (int)intersection.z - (int)lastIntersection.z);
-                        updateSectorOwnership(pickedSector);
+                        boolean heightMode = Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT) || Gdx.input.isKeyPressed(Input.Keys.ALT_RIGHT);
+
+                        if(!heightMode) {
+                            pickedSector.translate((int) intersection.x - (int) lastIntersection.x, (int) intersection.z - (int) lastIntersection.z);
+                            updateSectorOwnership(pickedSector);
+                        }
+                        else {
+                            if(Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)) {
+                                pickedSector.ceilHeight = startHeightModeCeilHeight - ((Gdx.input.getY() - lastMousePoint.y) / 60f);
+                                pickedSector.ceilHeight = (int) (pickedSector.ceilHeight * 8f) / 8f;
+                            }
+                            else {
+                                pickedSector.floorHeight = startHeightModeFloorHeight - ((Gdx.input.getY() - lastMousePoint.y) / 60f);
+                                pickedSector.floorHeight = (int) (pickedSector.floorHeight * 8f) / 8f;
+                            }
+                        }
+
                         refreshSectors();
                     }
                     wasDragging = true;
@@ -300,14 +325,16 @@ public class DoomTestGame extends ApplicationAdapter {
             }
         }
 
-        if(Gdx.input.isKeyJustPressed(Input.Keys.P)) {
-            if(current != null) cancelEditingSector();
-
-            if(editorMode == EditorModes.SECTOR) {
-                editorMode = EditorModes.POINT;
-            }
-            else {
+        if(Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
+            if(editorMode != EditorModes.SECTOR) {
                 editorMode = EditorModes.SECTOR;
+            }
+        }
+
+        if(Gdx.input.isKeyJustPressed(Input.Keys.P)) {
+            if(editorMode != EditorModes.POINT) {
+                if(current != null) cancelEditingSector();
+                editorMode = EditorModes.POINT;
             }
         }
 
@@ -335,12 +362,26 @@ public class DoomTestGame extends ApplicationAdapter {
         Line newLine = new Line(point, oldEnd, l.solid, l.left, l.right);
         lines.add(newLine);
 
-        for(int s = 0; s < l.left.points.size; s++) {
-            Vector2 p = l.left.points.get(s);
-            if(p == l.start) {
-                l.left.points.insert(s + 1, point);
-                break;
+        addNewPointToSector(new Line(l.start, oldEnd, l.solid, l.left, l.right), point, sectors);
+    }
+
+    private void addNewPointToSector(Line line, Vector2 point, Array<Sector> sectors) {
+        for(Sector sector : sectors) {
+
+            int startIndex = sector.points.indexOf(line.start, true);
+            int endIndex = sector.points.indexOf(line.end, true);
+
+            if(startIndex >= 0 && endIndex >= 0) {
+                int diff = startIndex - endIndex;
+                if(Math.abs(diff) == 1) {
+                    sector.points.insert(startIndex + 1, point);
+                }
+                else if (Math.abs(diff) == sector.points.size - 1) {
+                    sector.points.insert(0, point);
+                }
             }
+
+            addNewPointToSector(line, point, sector.subsectors);
         }
     }
 
@@ -525,6 +566,15 @@ public class DoomTestGame extends ApplicationAdapter {
     public void finishSector() {
         if(!isClockwise(current)) current.points.reverse();
 
+        // Add new points to existing lines / sectors where needed
+        Array<Vector2> currentPoints = new Array<Vector2>(current.getPoints());
+        for(Vector2 p : currentPoints) {
+            Line hovered = findPickedLine(new Vector3(p.x, 0, p.y));
+            if(hovered != null) {
+                addPointToLine(hovered, p);
+            }
+        }
+
         // find the parent, if there is one
         Sector parent = null;
         for(Sector s : sectors) {
@@ -539,15 +589,6 @@ public class DoomTestGame extends ApplicationAdapter {
 
             // parent's sectors might now be contained by this new sector
             refreshSectorParents(current, parent);
-        }
-
-        // Add new points to existing lines / sectors where needed
-        Array<Vector2> currentPoints = new Array<Vector2>(current.getPoints());
-        for(Vector2 p : currentPoints) {
-            Line hovered = findPickedLine(new Vector3(p.x, 0, p.y));
-            if(hovered != null) {
-                addPointToLine(hovered, p);
-            }
         }
 
         // add vertices and lines for the new sector
@@ -728,8 +769,8 @@ public class DoomTestGame extends ApplicationAdapter {
             batch.end();
 
             for(Sector sector : sectors) {
-                renderSectorWireframe(sector);
-                renderPoints(sector);
+                renderSectorWireframe(sector, Color.LIGHT_GRAY);
+                renderPoints(sector, Color.LIGHT_GRAY);
             }
 
 
@@ -738,8 +779,8 @@ public class DoomTestGame extends ApplicationAdapter {
                 renderNextPoint();
 
                 if(current != null) {
-                    renderSectorWireframe(current);
-                    renderPoints(current);
+                    renderSectorWireframe(current, Color.YELLOW);
+                    renderPoints(current, Color.YELLOW);
                 }
             }
             else if(editorMode == EditorModes.POINT) {
@@ -784,15 +825,15 @@ public class DoomTestGame extends ApplicationAdapter {
         }
 	}
 
-    public void renderSectorWireframe(Sector s) {
+    public void renderSectorWireframe(Sector s, Color color) {
         Array<Vector2> points = s.getPoints();
         if(points.size >= 2) {
             lineRenderer.begin(ShapeRenderer.ShapeType.Line);
 
-            if(hoveredSector == s || current == s)
+            if(hoveredSector == s)
                 lineRenderer.setColor(Color.WHITE);
             else
-                lineRenderer.setColor(Color.LIGHT_GRAY);
+                lineRenderer.setColor(color);
 
             for (int i = 0; i < points.size - 1; i++) {
                 Vector2 startPoint = points.get(i);
@@ -816,7 +857,7 @@ public class DoomTestGame extends ApplicationAdapter {
         }
 
         for(Sector subsector : s.subsectors) {
-            renderSectorWireframe(subsector);
+            renderSectorWireframe(subsector, color);
         }
     }
 
@@ -833,9 +874,9 @@ public class DoomTestGame extends ApplicationAdapter {
         }
     }
 
-    public void renderPoints(Sector s) {
+    public void renderPoints(Sector s, Color color) {
         lineRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        lineRenderer.setColor(Color.WHITE);
+        lineRenderer.setColor(color);
         Array<Vector2> points = s.getPoints();
 
         float pointSize = 0.2f;
@@ -848,7 +889,7 @@ public class DoomTestGame extends ApplicationAdapter {
         lineRenderer.end();
 
         for(Sector subsector : s.subsectors) {
-            renderPoints(subsector);
+            renderPoints(subsector, color);
         }
     }
 

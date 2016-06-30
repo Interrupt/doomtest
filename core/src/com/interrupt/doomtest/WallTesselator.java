@@ -73,7 +73,7 @@ public class WallTesselator {
         }
 
         // point wall outside, if there is a parent
-        if(line.right == null) {
+        if(line.right == null || line.right.isSolid) {
             wallVerts.add(new Vector3(line.start.x, in.getFloorHeight(), line.start.y));
             wallVerts.add(new Vector3(line.start.x, in.getCeilingHeight(), line.start.y));
             wallVerts.add(new Vector3(line.end.x, in.getFloorHeight(), line.end.y));
@@ -116,13 +116,30 @@ public class WallTesselator {
         }
 
         if(!line.solid && line.right != null && line.left.getCeilingHeight() != line.right.getCeilingHeight()) {
+            float offset = sectorHeight;
+
+            if(!line.solid && line.right != null) {
+                if(line.right.getCeilingHeight() < line.left.getCeilingHeight()) {
+                    offset = (line.right.getFloorHeight() - line.left.getFloorHeight()) * -0.5f;
+                }
+                else {
+                    offset = (line.left.getFloorHeight() - line.right.getFloorHeight()) * -0.5f;
+                }
+                if(line.right.getCeilingHeight() < line.left.getCeilingHeight()) {
+                    offset += (line.right.getCeilingHeight() - line.right.getFloorHeight()) * -0.5f;
+                }
+                else {
+                    offset += (line.left.getCeilingHeight() - line.left.getFloorHeight()) * -0.5f;
+                }
+            }
+
             sectorHeight = Math.abs(line.right.getCeilingHeight() - line.left.getCeilingHeight()) * -0.5f;
-            startV = 0;
-            endV = sectorHeight;
+            startV = 0 + offset;
+            endV = sectorHeight + offset;
 
             if(line.right.getCeilingHeight() > line.left.getCeilingHeight()) {
-                endV = 0;
-                startV = sectorHeight;
+                endV = 0 + offset;
+                startV = sectorHeight + offset;
             }
 
             wallUVs.add(new Vector2(0, startV));
