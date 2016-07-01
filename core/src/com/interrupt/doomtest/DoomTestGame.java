@@ -239,6 +239,8 @@ public class DoomTestGame extends ApplicationAdapter {
                     // Start a new sector if not currently editing one
                     if (current == null) {
                         editHeight = intersection.y;
+                        editPlane.set(new Vector3(0, editHeight, 0), Vector3.Y);
+
                         current = new Sector();
                         current.floorHeight = editHeight;
                     }
@@ -648,7 +650,6 @@ public class DoomTestGame extends ApplicationAdapter {
 
         if(parent != null) {
             parent.addSubSector(current);
-            current.floorHeight = parent.floorHeight;
             current.ceilHeight = parent.ceilHeight;
 
             // parent's sectors might now be contained by this new sector
@@ -688,6 +689,7 @@ public class DoomTestGame extends ApplicationAdapter {
         refreshSectors();
 
         editHeight = null;
+        editPlane.set(Vector3.Zero, Vector3.Y);
     }
 
     private void refreshSectorParents(Sector sector, Sector newParent) {
