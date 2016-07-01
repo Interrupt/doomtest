@@ -266,6 +266,10 @@ public class DoomTestGame extends ApplicationAdapter {
                         if(!heightMode) {
                             pickedSector.translate((int) intersection.x - (int) lastIntersection.x, (int) intersection.z - (int) lastIntersection.z);
                             updateSectorOwnership(pickedSector);
+
+                            if(pickedSector.isSolid) {
+                                refreshLineSolidity(pickedSector);
+                            }
                         }
                         else {
                             if(Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)) {
@@ -612,6 +616,13 @@ public class DoomTestGame extends ApplicationAdapter {
 
         if(parent == null)
             sectors.add(current);
+
+
+        // solid parents mean line solidity might change now
+        if(parent != null && parent.isSolid) {
+            refreshLineSolidity(parent);
+            refreshLineSolidity(current);
+        }
 
         current = null;
         refreshSectors();
