@@ -122,6 +122,7 @@ public class DoomTestGame extends ApplicationAdapter {
         return collected;
     }
 
+    Vector3 temp_int = new Vector3();
     public Sector intersectSectors(Ray r, Vector3 closest) {
         // Get all sectors into one list
         Array<Sector> allSectors = new Array<Sector>();
@@ -134,15 +135,15 @@ public class DoomTestGame extends ApplicationAdapter {
 
         for(Sector s : allSectors) {
             Plane plane = new Plane(Vector3.Y, new Vector3(0, s.floorHeight, 0));
-            if(Intersector.intersectRayPlane(r, plane, intersection)) {
+            if(Intersector.intersectRayPlane(r, plane, temp_int)) {
                 if(plane.isFrontFacing(camera.direction)) {
-                    Vector2 t_point = new Vector2(intersection.x, intersection.z);
-                    float dist = intersection.dst(camera.position);
+                    Vector2 t_point = new Vector2(temp_int.x, temp_int.z);
+                    float dist = temp_int.dst(camera.position);
 
                     if (s.isPointInside(t_point) && dist < t_dist) {
                         if(s.getSectorOfPoint(t_point) == s) {
                             t_dist = dist;
-                            closest.set(intersection);
+                            closest.set(temp_int);
                             closestSector = s;
                         }
                     }
@@ -167,16 +168,12 @@ public class DoomTestGame extends ApplicationAdapter {
         }
     }
 
-    Vector3 worldInt = new Vector3();
     public void update() {
         Ray r = camera.getPickRay(Gdx.input.getX(), Gdx.input.getY());
 
         lastIntersection.set(intersection);
-        if (Intersector.intersectRayPlane(r, editPlane, intersection)) {
 
-            if(intersectsWorld(r, worldInt)) {
-                intersection.set(worldInt);
-            }
+        if(intersectsWorld(r, intersection) || Intersector.intersectRayPlane(r, editPlane, intersection)) {
 
             // round grid point to the grid
             pickedGridPoint.set((int) intersection.x, intersection.y, (int) intersection.z);
