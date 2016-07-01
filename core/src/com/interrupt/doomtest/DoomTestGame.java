@@ -40,6 +40,8 @@ public class DoomTestGame extends ApplicationAdapter {
     Vector3 pickedGridPoint = new Vector3();
     Vector2 pickedPoint2d = new Vector2();
 
+    Float editHeight = null;
+
     Sector hoveredSector = null;
     Sector pickedSector = null;
 
@@ -104,26 +106,51 @@ public class DoomTestGame extends ApplicationAdapter {
     }
 
     public Sector pickSector(Vector2 point) {
-        Ray r = camera.getPickRay(Gdx.input.getX(), Gdx.input.getY());
-        return pickSector(r, sectors);
+        for(Sector s : sectors) {
+            if(s.isPointInside(point)) {
+                return s.getSectorOfPoint(point);
+            }
+        }
+        return null;
     }
 
-    public Sector pickSector(Ray r, Array<Sector> checkSectors) {
-        for(Sector s : checkSectors) {
+    public Array<Sector> collectAllSectorsIn(Sector sector, Array<Sector> collected) {
+        collected.add(sector);
+        for(Sector s : sector.subsectors ) {
+            collectAllSectorsIn(s, collected);
+        }
+        return collected;
+    }
+
+    public Sector intersectSectors(Ray r, Vector3 closest) {
+        // Get all sectors into one list
+        Array<Sector> allSectors = new Array<Sector>();
+        for(Sector s : sectors) {
+            collectAllSectorsIn(s, allSectors);
+        }
+
+        Sector closestSector = null;
+        float t_dist = 10000;
+
+        for(Sector s : allSectors) {
             Plane plane = new Plane(Vector3.Y, new Vector3(0, s.floorHeight, 0));
             if(Intersector.intersectRayPlane(r, plane, intersection)) {
                 if(plane.isFrontFacing(camera.direction)) {
                     Vector2 t_point = new Vector2(intersection.x, intersection.z);
-                    if (s.isPointInside(t_point)) {
-                        if(s.getSectorOfPoint(t_point) == s)
-                            return s;
-                        else
-                            return pickSector(r, s.subsectors);
+                    float dist = intersection.dst(camera.position);
+
+                    if (s.isPointInside(t_point) && dist < t_dist) {
+                        if(s.getSectorOfPoint(t_point) == s) {
+                            t_dist = dist;
+                            closest.set(intersection);
+                            closestSector = s;
+                        }
                     }
                 }
             }
         }
-        return null;
+
+        return closestSector;
     }
 
     public void refreshLineSolidity(Sector sector) {
@@ -140,17 +167,27 @@ public class DoomTestGame extends ApplicationAdapter {
         }
     }
 
+    Vector3 worldInt = new Vector3();
     public void update() {
         Ray r = camera.getPickRay(Gdx.input.getX(), Gdx.input.getY());
 
         lastIntersection.set(intersection);
         if (Intersector.intersectRayPlane(r, editPlane, intersection)) {
+
+            if(intersectsWorld(r, worldInt)) {
+                intersection.set(worldInt);
+            }
+
             // round grid point to the grid
             pickedGridPoint.set((int) intersection.x, intersection.y, (int) intersection.z);
             pickedPoint2d.set(intersection.x, intersection.z);
 
             // find which sector is picked
             hoveredSector = pickSector(pickedPoint2d);
+
+            if(editHeight != null) {
+                pickedGridPoint.y = editHeight;
+            }
 
             // which editing mode?
             if (editorMode == EditorModes.SECTOR) {
@@ -204,7 +241,9 @@ public class DoomTestGame extends ApplicationAdapter {
 
                     // Start a new sector if not currently editing one
                     if (current == null) {
+                        editHeight = intersection.y;
                         current = new Sector();
+                        current.floorHeight = editHeight;
                     }
 
                     // finish the sector automatically if the line loops
@@ -369,6 +408,13 @@ public class DoomTestGame extends ApplicationAdapter {
                 editorMode = EditorModes.SPLIT;
             }
         }
+    }
+
+    private boolean intersectsWorld(Ray r, Vector3 intersects) {
+        if(intersectSectors(r, intersects) != null) {
+            return true;
+        }
+        return false;
     }
 
     private void addPointToLine(Line l, Vector2 point) {
@@ -643,6 +689,8 @@ public class DoomTestGame extends ApplicationAdapter {
 
         current = null;
         refreshSectors();
+
+        editHeight = null;
     }
 
     private void refreshSectorParents(Sector sector, Sector newParent) {
@@ -908,7 +956,7 @@ public class DoomTestGame extends ApplicationAdapter {
                 Vector2 endPoint = points.get(points.size - 1);
                 lineRenderer.begin(ShapeRenderer.ShapeType.Line);
                 lineRenderer.setColor(Color.YELLOW);
-                lineRenderer.line(tempVec3.set(endPoint.x, 0, endPoint.y), pickedGridPoint);
+                lineRenderer.line(tempVec3.set(endPoint.x, editHeight, endPoint.y), pickedGridPoint);
                 lineRenderer.end();
             }
         }
