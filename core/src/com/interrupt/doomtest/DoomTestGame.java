@@ -3,10 +3,7 @@ package com.interrupt.doomtest;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.badlogic.gdx.graphics.Camera;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.PerspectiveCamera;
+import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
@@ -107,12 +104,25 @@ public class DoomTestGame extends ApplicationAdapter {
     }
 
     public Sector pickSector(Vector2 point) {
-        for(Sector sector : sectors) {
-            Sector picked = sector.getSectorOfPoint(point);
-            if(picked != null && !picked.hasVertex(point))
-                return picked;
-        }
+        Ray r = camera.getPickRay(Gdx.input.getX(), Gdx.input.getY());
+        return pickSector(r, sectors);
+    }
 
+    public Sector pickSector(Ray r, Array<Sector> checkSectors) {
+        for(Sector s : checkSectors) {
+            Plane plane = new Plane(Vector3.Y, new Vector3(0, s.floorHeight, 0));
+            if(Intersector.intersectRayPlane(r, plane, intersection)) {
+                if(plane.isFrontFacing(camera.direction)) {
+                    Vector2 t_point = new Vector2(intersection.x, intersection.z);
+                    if (s.isPointInside(t_point)) {
+                        if(s.getSectorOfPoint(t_point) == s)
+                            return s;
+                        else
+                            return pickSector(r, s.subsectors);
+                    }
+                }
+            }
+        }
         return null;
     }
 
@@ -806,11 +816,13 @@ public class DoomTestGame extends ApplicationAdapter {
                     Vector2 point = pickedPoint;
                     if(point == null) point = hoveredPoint;
 
-                    float pointSize = 0.2f;
-                    lineRenderer.begin(ShapeRenderer.ShapeType.Filled);
-                    lineRenderer.setColor(Color.RED);
-                    lineRenderer.box(point.x - pointSize / 2, 0, point.y + pointSize / 2, pointSize, pointSize / 3, pointSize);
-                    lineRenderer.end();
+                    for(Sector s : getAllSectorsWithVertex(sectors, point, new Array<Sector>())) {
+                        float pointSize = 0.2f;
+                        lineRenderer.begin(ShapeRenderer.ShapeType.Filled);
+                        lineRenderer.setColor(Color.RED);
+                        lineRenderer.box(point.x - pointSize / 2, s.floorHeight, point.y + pointSize / 2, pointSize, pointSize / 3, pointSize);
+                        lineRenderer.end();
+                    }
                 }
 
                 if(pickedLine != null || hoveredLine != null) {
@@ -843,6 +855,16 @@ public class DoomTestGame extends ApplicationAdapter {
         }
 	}
 
+    public Array<Sector> getAllSectorsWithVertex(Array<Sector> search, Vector2 vertex, Array<Sector> found) {
+        for(Sector s : search) {
+            if(s.points.contains(vertex, true)) {
+                found.add(s);
+            }
+            getAllSectorsWithVertex(s.subsectors, vertex, found);
+        }
+        return found;
+    }
+
     public void renderSectorWireframe(Sector s, Color color) {
         Array<Vector2> points = s.getPoints();
         if(points.size >= 2) {
@@ -857,8 +879,8 @@ public class DoomTestGame extends ApplicationAdapter {
                 Vector2 startPoint = points.get(i);
                 Vector2 endPoint = points.get(i + 1);
 
-                tempVec3.set(startPoint.x, 0, startPoint.y);
-                tempVec3_2.set(endPoint.x, 0, endPoint.y);
+                tempVec3.set(startPoint.x, s.floorHeight, startPoint.y);
+                tempVec3_2.set(endPoint.x, s.floorHeight, endPoint.y);
 
                 lineRenderer.line(tempVec3, tempVec3_2);
             }
@@ -866,8 +888,8 @@ public class DoomTestGame extends ApplicationAdapter {
             Vector2 startPoint = points.get(0);
             Vector2 endPoint = points.get(points.size - 1);
 
-            tempVec3.set(startPoint.x, 0, startPoint.y);
-            tempVec3_2.set(endPoint.x, 0, endPoint.y);
+            tempVec3.set(startPoint.x, s.floorHeight, startPoint.y);
+            tempVec3_2.set(endPoint.x, s.floorHeight, endPoint.y);
 
             lineRenderer.line(tempVec3, tempVec3_2);
 
@@ -900,7 +922,7 @@ public class DoomTestGame extends ApplicationAdapter {
         float pointSize = 0.2f;
         if(points.size > 0) {
             for(Vector2 point : points) {
-                lineRenderer.box(point.x - pointSize / 2, 0, point.y + pointSize / 2, pointSize, pointSize / 3, pointSize);
+                lineRenderer.box(point.x - pointSize / 2, s.getFloorHeight(), point.y + pointSize / 2, pointSize, pointSize / 3, pointSize);
             }
         }
 
