@@ -231,7 +231,7 @@ public class DoomTestGame extends ApplicationAdapter {
                     else hoveredLine = null;
                 }
 
-                if(Gdx.input.justTouched()) {
+                if(Gdx.input.justTouched() && Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
                     pickedPoint = null;
                     pickedSector = null;
                     pickedLine = null;
@@ -247,6 +247,13 @@ public class DoomTestGame extends ApplicationAdapter {
                     if(pickedSector != null) {
                         startHeightModeFloorHeight = pickedSector.floorHeight;
                         startHeightModeCeilHeight = pickedSector.ceilHeight;
+                    }
+                }
+
+                if(Gdx.input.justTouched() && Gdx.input.isButtonPressed(Input.Buttons.RIGHT)) {
+                    if(pickedSector != null && hoveredSector != null) {
+                        hoveredSector.match(pickedSector);
+                        refreshSectors();
                     }
                 }
 

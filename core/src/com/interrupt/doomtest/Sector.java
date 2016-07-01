@@ -329,4 +329,9 @@ public class Sector {
             s.removePoint(vertex);
         }
     }
+
+    public void match(Sector other) {
+        floorHeight = other.floorHeight;
+        ceilHeight = other.ceilHeight;
+    }
 }
