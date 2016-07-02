@@ -154,6 +154,53 @@ public class DoomTestGame extends ApplicationAdapter {
         return closestSector;
     }
 
+    public Line intersectWalls(Ray ray, Vector3 closest) {
+        float t_dist = 10000;
+        Line closestLine = null;
+
+        for(Line l : lines) {
+            Vector3 p1 = new Vector3(l.start.x, 0, l.start.y);
+            Vector3 p2 = new Vector3(l.end.x, 0, l.end.y);
+            Vector3 p3 = new Vector3(l.end.x, 1, l.end.y);
+            Plane plane = new Plane(p1, p2, p3);
+
+            Vector3 endPoint = ray.getEndPoint(new Vector3(), 1000);
+            Vector2 startPoint2d = new Vector2(ray.origin.x, ray.origin.z);
+            Vector2 endPoint2d = new Vector2(endPoint.x, endPoint.z);
+
+            if(l.findIntersection(startPoint2d, endPoint2d) != null && Intersector.intersectRayPlane(ray, plane, temp_int)) {
+
+                boolean solidHit = l.solid &&
+                        !plane.isFrontFacing(camera.direction) &&
+                        l.left.floorHeight < temp_int.y &&
+                        l.left.ceilHeight > temp_int.y;
+
+                boolean nonSolidLowerHit = false;
+
+                if(l.right != null && !l.solid) {
+                    boolean nonSolidLowerFrontFacing = (l.left.floorHeight > l.right.floorHeight && plane.isFrontFacing(camera.direction))
+                            || (l.left.floorHeight < l.right.floorHeight && !plane.isFrontFacing(camera.direction));
+
+                    nonSolidLowerHit = nonSolidLowerFrontFacing &&
+                            (l.left.floorHeight > l.right.floorHeight && (l.left.floorHeight > temp_int.y && l.right.floorHeight < temp_int.y)) ||
+                            (l.left.floorHeight < l.right.floorHeight && (l.left.floorHeight < temp_int.y && l.right.floorHeight > temp_int.y));
+                }
+
+                if((solidHit || nonSolidLowerHit)) {
+
+                    float dist = temp_int.dst(camera.position);
+                    if(dist < t_dist) {
+                        t_dist = dist;
+                        closest.set(temp_int);
+                        closestLine = l;
+                    }
+                }
+            }
+        }
+
+        return closestLine;
+    }
+
     public void refreshLineSolidity(Sector sector) {
         for(Line line : lines) {
             if(line.left == sector || line.right == sector) {
@@ -411,6 +458,9 @@ public class DoomTestGame extends ApplicationAdapter {
 
     private boolean intersectsWorld(Ray r, Vector3 intersects) {
         if(intersectSectors(r, intersects) != null) {
+            return true;
+        }
+        else if(intersectWalls(r, intersects) != null) {
             return true;
         }
         return false;
