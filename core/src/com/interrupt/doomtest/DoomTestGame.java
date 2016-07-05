@@ -36,6 +36,8 @@ public class DoomTestGame extends ApplicationAdapter {
     Vector3 tempVec3_2 = new Vector3();
 
     Vector3 lastIntersection = new Vector3();
+    Vector3 editPlaneIntersection = new Vector3();
+
     Vector3 intersection = new Vector3();
     Vector3 pickedGridPoint = new Vector3();
     Vector2 pickedPoint2d = new Vector2();
@@ -218,9 +220,16 @@ public class DoomTestGame extends ApplicationAdapter {
     public void update() {
         Ray r = camera.getPickRay(Gdx.input.getX(), Gdx.input.getY());
 
-        lastIntersection.set(intersection);
+        if(lastIntersection != null)
+            lastIntersection.set(editPlaneIntersection);
 
-        if(intersectsWorld(r, intersection) || Intersector.intersectRayPlane(r, editPlane, intersection)) {
+        boolean intersectsWorld = intersectsWorld(r, intersection);
+        boolean intersectsEditPlane = Intersector.intersectRayPlane(r, editPlane, editPlaneIntersection);
+
+        if(intersectsWorld || intersectsEditPlane) {
+
+            if(!intersectsWorld) intersection.set(editPlaneIntersection);
+            if(lastIntersection == null) lastIntersection = new Vector3(editPlaneIntersection);
 
             // round grid point to the grid
             pickedGridPoint.set((int) intersection.x, intersection.y, (int) intersection.z);
@@ -343,30 +352,25 @@ public class DoomTestGame extends ApplicationAdapter {
                         startHeightModeFloorHeight = pickedSector.floorHeight;
                         startHeightModeCeilHeight = pickedSector.ceilHeight;
                     }
-                }
 
-                if(Gdx.input.justTouched() && Gdx.input.isButtonPressed(Input.Buttons.RIGHT)) {
-                    if(pickedSector != null && hoveredSector != null) {
-                        hoveredSector.match(pickedSector);
-                        refreshSectors();
-                    }
+                    editPlane.set(new Vector3(0, intersection.y, 0), Vector3.Y);
+                    lastIntersection = null;
                 }
-
-                if(Gdx.input.isTouched()) {
+                else if(Gdx.input.isTouched()) {
                     if(pickedLine != null) {
-                        pickedLine.start.add((int)intersection.x - (int)lastIntersection.x, (int)intersection.z - (int)lastIntersection.z);
-                        pickedLine.end.add((int)intersection.x - (int)lastIntersection.x, (int)intersection.z - (int)lastIntersection.z);
+                        pickedLine.start.add((int)editPlaneIntersection.x - (int)lastIntersection.x, (int)editPlaneIntersection.z - (int)lastIntersection.z);
+                        pickedLine.end.add((int)editPlaneIntersection.x - (int)lastIntersection.x, (int)editPlaneIntersection.z - (int)lastIntersection.z);
                         refreshSectors();
                     }
                     else if(pickedPoint != null) {
-                        pickedPoint.add((int)intersection.x - (int)lastIntersection.x, (int)intersection.z - (int)lastIntersection.z);
+                        pickedPoint.add((int)editPlaneIntersection.x - (int)lastIntersection.x, (int)editPlaneIntersection.z - (int)lastIntersection.z);
                         refreshSectors();
                     }
                     else if(pickedSector != null) {
                         boolean heightMode = Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT) || Gdx.input.isKeyPressed(Input.Keys.ALT_RIGHT);
 
                         if(!heightMode) {
-                            pickedSector.translate((int) intersection.x - (int) lastIntersection.x, (int) intersection.z - (int) lastIntersection.z);
+                            pickedSector.translate((int) editPlaneIntersection.x - (int) lastIntersection.x, (int) editPlaneIntersection.z - (int) lastIntersection.z);
                             updateSectorOwnership(pickedSector);
 
                             if(pickedSector.isSolid) {
@@ -387,6 +391,16 @@ public class DoomTestGame extends ApplicationAdapter {
                         refreshSectors();
                     }
                     wasDragging = true;
+                }
+                else {
+                    editPlane.set(Vector3.Zero, Vector3.Y);
+                }
+
+                if(Gdx.input.justTouched() && Gdx.input.isButtonPressed(Input.Buttons.RIGHT)) {
+                    if(pickedSector != null && hoveredSector != null) {
+                        hoveredSector.match(pickedSector);
+                        refreshSectors();
+                    }
                 }
 
                 // Delete sectors or points
@@ -916,8 +930,7 @@ public class DoomTestGame extends ApplicationAdapter {
             batch.end();
 
             for(Sector sector : sectors) {
-                renderSectorWireframe(sector, Color.LIGHT_GRAY);
-                renderPoints(sector, Color.LIGHT_GRAY);
+                renderPoints(sector, Color.WHITE);
             }
 
 
@@ -942,16 +955,6 @@ public class DoomTestGame extends ApplicationAdapter {
                         lineRenderer.box(point.x - pointSize / 2, s.floorHeight, point.y + pointSize / 2, pointSize, pointSize / 3, pointSize);
                         lineRenderer.end();
                     }
-                }
-
-                if(pickedLine != null || hoveredLine != null) {
-                    Line line = pickedLine;
-                    if(line == null) line = hoveredLine;
-
-                    lineRenderer.begin(ShapeRenderer.ShapeType.Line);
-                    lineRenderer.setColor(Color.RED);
-                    lineRenderer.line(line.start.x, 0, line.start.y, line.end.x, 0, line.end.y);
-                    lineRenderer.end();
                 }
             }
             else if(editorMode == EditorModes.SPLIT) {

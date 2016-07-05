@@ -50,24 +50,31 @@ public class WallTesselator {
         return walls;
     }
 
-    private static Array<Vector3> getWallVerts(Line line) {
+    private static Array<Vector3> getUpperWallVerts(Line line) {
+        Array<Vector3> wallVerts = new Array<Vector3>();
+
+        if(line.right != null && line.left.getCeilingHeight() != line.right.getCeilingHeight()) {
+            wallVerts.add(new Vector3(line.start.x, line.right.getCeilingHeight(), line.start.y));
+            wallVerts.add(new Vector3(line.start.x, line.left.getCeilingHeight(), line.start.y));
+            wallVerts.add(new Vector3(line.end.x, line.right.getCeilingHeight(), line.end.y));
+            wallVerts.add(new Vector3(line.end.x, line.left.getCeilingHeight(), line.end.y));
+        }
+
+        return wallVerts;
+    }
+
+    private static Array<Vector3> getLowerWallVerts(Line line) {
         Array<Vector3> wallVerts = new Array<Vector3>();
 
         if(line.solid) {
             addSolidWallVerts(line, wallVerts);
         }
-        else if(line.right != null) {
+        else {
             if (line.left.getFloorHeight() != line.right.getFloorHeight()) {
                 wallVerts.add(new Vector3(line.start.x, line.left.getFloorHeight(), line.start.y));
                 wallVerts.add(new Vector3(line.start.x, line.right.getFloorHeight(), line.start.y));
                 wallVerts.add(new Vector3(line.end.x, line.left.getFloorHeight(), line.end.y));
                 wallVerts.add(new Vector3(line.end.x, line.right.getFloorHeight(), line.end.y));
-            }
-            if(line.left.getCeilingHeight() != line.right.getCeilingHeight()) {
-                wallVerts.add(new Vector3(line.start.x, line.right.getCeilingHeight(), line.start.y));
-                wallVerts.add(new Vector3(line.start.x, line.left.getCeilingHeight(), line.start.y));
-                wallVerts.add(new Vector3(line.end.x, line.right.getCeilingHeight(), line.end.y));
-                wallVerts.add(new Vector3(line.end.x, line.left.getCeilingHeight(), line.end.y));
             }
         }
 
@@ -95,7 +102,7 @@ public class WallTesselator {
         }
     }
 
-    private static Array<Vector2> getWallUVs(Line line) {
+    private static Array<Vector2> getLowerWallUVs(Line line) {
         float lineLength = line.getLength();
 
         float sectorHeight = line.left.getCeilingHeight() - line.left.getFloorHeight();
@@ -123,6 +130,23 @@ public class WallTesselator {
             wallUVs.add(new Vector2(lineLength * 0.5f, endV));
         }
 
+        return wallUVs;
+    }
+
+    private static Array<Vector2> getUpperWallUVs(Line line) {
+        float lineLength = line.getLength();
+
+        float sectorHeight = line.left.getCeilingHeight() - line.left.getFloorHeight();
+        if(line.left.isSolid && line.right != null) sectorHeight = line.right.getCeilingHeight() - line.right.getFloorHeight();
+
+        if(!line.solid && line.right != null) {
+            sectorHeight = line.right.getFloorHeight() - line.left.getFloorHeight();
+        }
+
+        sectorHeight = Math.abs(sectorHeight) * -0.5f;
+
+        Array<Vector2> wallUVs = new Array<Vector2>();
+
         if(!line.solid && line.right != null && line.left.getCeilingHeight() != line.right.getCeilingHeight()) {
             float offset = sectorHeight;
 
@@ -142,8 +166,8 @@ public class WallTesselator {
             }
 
             sectorHeight = Math.abs(line.right.getCeilingHeight() - line.left.getCeilingHeight()) * -0.5f;
-            startV = 0 + offset;
-            endV = sectorHeight + offset;
+            float startV = 0 + offset;
+            float endV = sectorHeight + offset;
 
             if(line.right.getCeilingHeight() > line.left.getCeilingHeight()) {
                 endV = 0 + offset;
@@ -169,15 +193,33 @@ public class WallTesselator {
         for(int i = 0; i < walls.size; i++) {
 
             Line wall = walls.get(i);
-            Array<Vector3> wallVerts = getWallVerts(wall);
 
-            FloatArray vertices = vertexData.getVerticesByMaterial(wall.lowerMaterial);
-
-            if(wallVerts.size > 0) {
-                Array<Vector2> uvs = getWallUVs(wall);
+            Array<Vector3> lowerWallVerts = getLowerWallVerts(wall);
+            if(lowerWallVerts.size > 0) {
+                FloatArray vertices = vertexData.getVerticesByMaterial(wall.lowerMaterial);
+                Array<Vector2> uvs = getLowerWallUVs(wall);
                 int uvi = 0;
 
-                for (Vector3 v : wallVerts) {
+                for (Vector3 v : lowerWallVerts) {
+                    // position
+                    vertices.add(v.x);
+                    vertices.add(v.y);
+                    vertices.add(v.z);
+
+                    // UV
+                    Vector2 uv = uvs.get(uvi++);
+                    vertices.add(uv.x);
+                    vertices.add(uv.y);
+                }
+            }
+
+            Array<Vector3> upperWallVerts = getUpperWallVerts(wall);
+            if(upperWallVerts.size > 0) {
+                FloatArray vertices = vertexData.getVerticesByMaterial(wall.upperMaterial);
+                Array<Vector2> uvs = getUpperWallUVs(wall);
+                int uvi = 0;
+
+                for (Vector3 v : upperWallVerts) {
                     // position
                     vertices.add(v.x);
                     vertices.add(v.y);
