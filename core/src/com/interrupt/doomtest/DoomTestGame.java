@@ -4,6 +4,7 @@ import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.*;
+import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
@@ -67,6 +68,8 @@ public class DoomTestGame extends ApplicationAdapter {
 
     public Vector2 splitStart = null;
     public Vector2 splitEnd = null;
+
+    Material selectedMaterial = null;
 
 	@Override
 	public void create () {
@@ -915,6 +918,29 @@ public class DoomTestGame extends ApplicationAdapter {
 	public void render () {
         try {
             update();
+
+            if(selectedMaterial != null) {
+                selectedMaterial.set(ColorAttribute.createDiffuse(Color.WHITE));
+            }
+
+            if(hoveredLine != null || pickedLine != null) {
+                for (ModelInstance m : models) {
+                    if(hoveredLine != null) {
+                        Material material = m.getMaterial(hoveredLine.hashCode() + "_lower");
+                        if (material != null) {
+                            material.set(ColorAttribute.createDiffuse(Color.YELLOW));
+                            selectedMaterial = material;
+                        }
+                    }
+                    if(pickedLine != null) {
+                        Material material = m.getMaterial(pickedLine.hashCode() + "_lower");
+                        if (material != null) {
+                            material.set(ColorAttribute.createDiffuse(Color.RED));
+                            selectedMaterial = material;
+                        }
+                    }
+                }
+            }
 
             Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
             Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
