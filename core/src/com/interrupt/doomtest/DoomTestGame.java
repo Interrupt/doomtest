@@ -69,7 +69,7 @@ public class DoomTestGame extends ApplicationAdapter {
     public Vector2 splitStart = null;
     public Vector2 splitEnd = null;
 
-    Material selectedMaterial = null;
+    Array<Material> selectedMaterials = new Array<Material>();
 
 	@Override
 	public void create () {
@@ -238,9 +238,6 @@ public class DoomTestGame extends ApplicationAdapter {
             pickedGridPoint.set((int) intersection.x, intersection.y, (int) intersection.z);
             pickedPoint2d.set(intersection.x, intersection.z);
 
-            // find which sector is picked
-            hoveredSector = pickSector(pickedPoint2d);
-
             if(editHeight != null) {
                 pickedGridPoint.y = editHeight;
             }
@@ -334,8 +331,7 @@ public class DoomTestGame extends ApplicationAdapter {
                     }
 
                     hoveredPoint = getVertexNear(intersection.x, intersection.z, 0.25f);
-                    if(hoveredPoint == null) hoveredLine = findPickedLine(intersection);
-                    else hoveredLine = null;
+                    if(hoveredPoint != null) hoveredLine = null;
                 }
 
                 if(Gdx.input.justTouched() && Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
@@ -476,8 +472,11 @@ public class DoomTestGame extends ApplicationAdapter {
     Vector3 sectorIntersection = new Vector3();
     Vector3 wallIntersection = new Vector3();
     private boolean intersectsWorld(Ray r, Vector3 intersects) {
-        boolean hitSector = intersectSectors(r, sectorIntersection) != null;
-        boolean hitWall = intersectWalls(r, wallIntersection) != null;
+        hoveredSector = intersectSectors(r, sectorIntersection);
+        hoveredLine = intersectWalls(r, wallIntersection);
+
+        boolean hitSector = hoveredSector != null;
+        boolean hitWall = hoveredLine != null;
 
         if(hitSector || hitWall) {
             if(hitSector) {
@@ -485,7 +484,7 @@ public class DoomTestGame extends ApplicationAdapter {
             }
             if(hitWall) {
                 if(sectorIntersection == null) intersects.set(wallIntersection);
-                else if(wallIntersection.dst(camera.position) < sectorIntersection.dst(camera.position)) {
+                else if(wallIntersection.dst(camera.position) <= sectorIntersection.dst(camera.position)) {
                     intersects.set(wallIntersection);
                 }
             }
@@ -919,24 +918,39 @@ public class DoomTestGame extends ApplicationAdapter {
         try {
             update();
 
-            if(selectedMaterial != null) {
+            for(Material selectedMaterial : selectedMaterials) {
                 selectedMaterial.set(ColorAttribute.createDiffuse(Color.WHITE));
             }
 
-            if(hoveredLine != null || pickedLine != null) {
+            if(hoveredLine != null || pickedLine != null || hoveredSector != null || pickedSector != null) {
                 for (ModelInstance m : models) {
                     if(hoveredLine != null) {
                         Material material = m.getMaterial(hoveredLine.hashCode() + "_lower");
                         if (material != null) {
                             material.set(ColorAttribute.createDiffuse(Color.YELLOW));
-                            selectedMaterial = material;
+                            selectedMaterials.add(material);
                         }
                     }
                     if(pickedLine != null) {
                         Material material = m.getMaterial(pickedLine.hashCode() + "_lower");
                         if (material != null) {
                             material.set(ColorAttribute.createDiffuse(Color.RED));
-                            selectedMaterial = material;
+                            selectedMaterials.add(material);
+                        }
+                    }
+
+                    if(hoveredSector != null) {
+                        Material material = m.getMaterial(hoveredSector.hashCode() + "_floor");
+                        if (material != null) {
+                            material.set(ColorAttribute.createDiffuse(Color.YELLOW));
+                            selectedMaterials.add(material);
+                        }
+                    }
+                    if(pickedSector != null) {
+                        Material material = m.getMaterial(pickedSector.hashCode() + "_floor");
+                        if (material != null) {
+                            material.set(ColorAttribute.createDiffuse(Color.RED));
+                            selectedMaterials.add(material);
                         }
                     }
                 }
