@@ -53,7 +53,7 @@ public class WallTesselator {
     private static Array<Vector3> getUpperWallVerts(Line line) {
         Array<Vector3> wallVerts = new Array<Vector3>();
 
-        if(line.right != null && line.left.getCeilingHeight() != line.right.getCeilingHeight()) {
+        if(!line.solid && line.right != null && line.left.getCeilingHeight() != line.right.getCeilingHeight()) {
             wallVerts.add(new Vector3(line.start.x, line.right.getCeilingHeight(), line.start.y));
             wallVerts.add(new Vector3(line.start.x, line.left.getCeilingHeight(), line.start.y));
             wallVerts.add(new Vector3(line.end.x, line.right.getCeilingHeight(), line.end.y));

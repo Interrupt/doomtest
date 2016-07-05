@@ -176,7 +176,7 @@ public class DoomTestGame extends ApplicationAdapter {
             if(l.findIntersection(startPoint2d, endPoint2d) != null && Intersector.intersectRayPlane(ray, plane, temp_int)) {
 
                 boolean solidHit = l.solid &&
-                        !plane.isFrontFacing(camera.direction) &&
+                        (!l.left.isSolid && !plane.isFrontFacing(camera.direction) || (l.left.isSolid && plane.isFrontFacing(camera.direction))) &&
                         l.left.floorHeight < temp_int.y &&
                         l.left.ceilHeight > temp_int.y;
 
@@ -491,9 +491,13 @@ public class DoomTestGame extends ApplicationAdapter {
                 intersects.set(sectorIntersection);
             }
             if(hitWall) {
-                if(!hitSector) intersects.set(wallIntersection);
+                if(!hitSector) {
+                    intersects.set(wallIntersection);
+                    hoveredSector = null;
+                }
                 else if(wallIntersection.dst(camera.position) <= sectorIntersection.dst(camera.position)) {
                     intersects.set(wallIntersection);
+                    hoveredSector = null;
                 }
                 else hoveredLine = null;
             }
@@ -728,48 +732,51 @@ public class DoomTestGame extends ApplicationAdapter {
             }
         }
 
-        // find the parent, if there is one
-        Sector parent = null;
-        for(Sector s : sectors) {
-            Sector containing = s.getSectorOfSector(current);
-            if(containing != null) parent = containing;
-        }
+        if(current.points.size > 2) {
 
-        if(parent != null) {
-            parent.addSubSector(current);
-            current.ceilHeight = parent.ceilHeight;
-
-            // parent's sectors might now be contained by this new sector
-            refreshSectorParents(current, parent);
-        }
-
-        // add vertices and lines for the new sector
-        Array<Vector2> points = current.getPoints();
-        for(int i = 0; i < points.size; i++) {
-            Vector2 p = points.get(i);
-            addVertex(p);
-
-            if(i > 0) {
-                Vector2 prev = points.get(i - 1);
-                addLine(prev, p);
+            // find the parent, if there is one
+            Sector parent = null;
+            for (Sector s : sectors) {
+                Sector containing = s.getSectorOfSector(current);
+                if (containing != null) parent = containing;
             }
-        }
 
-        // close the loop, if it isn't
-        Vector2 startPoint = points.first();
-        Vector2 lastPoint = points.get(points.size - 1);
-        if (!lastPoint.equals(startPoint)) {
-            addLine(lastPoint, startPoint);
-        }
+            if (parent != null) {
+                parent.addSubSector(current);
+                current.ceilHeight = parent.ceilHeight;
 
-        if(parent == null)
-            sectors.add(current);
+                // parent's sectors might now be contained by this new sector
+                refreshSectorParents(current, parent);
+            }
+
+            // add vertices and lines for the new sector
+            Array<Vector2> points = current.getPoints();
+            for (int i = 0; i < points.size; i++) {
+                Vector2 p = points.get(i);
+                addVertex(p);
+
+                if (i > 0) {
+                    Vector2 prev = points.get(i - 1);
+                    addLine(prev, p);
+                }
+            }
+
+            // close the loop, if it isn't
+            Vector2 startPoint = points.first();
+            Vector2 lastPoint = points.get(points.size - 1);
+            if (!lastPoint.equals(startPoint)) {
+                addLine(lastPoint, startPoint);
+            }
+
+            if (parent == null)
+                sectors.add(current);
 
 
-        // solid parents mean line solidity might change now
-        if(parent != null && parent.isSolid) {
-            refreshLineSolidity(parent);
-            refreshLineSolidity(current);
+            // solid parents mean line solidity might change now
+            if (parent != null && parent.isSolid) {
+                refreshLineSolidity(parent);
+                refreshLineSolidity(current);
+            }
         }
 
         current = null;
