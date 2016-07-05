@@ -215,7 +215,7 @@ public class WallTesselator {
 
             Array<Vector3> upperWallVerts = getUpperWallVerts(wall);
             if(upperWallVerts.size > 0) {
-                FloatArray vertices = vertexData.getVerticesByMaterial(wall.upperMaterial);
+                FloatArray vertices = vertexData.getVerticesByMaterial(wall.lowerMaterial);
                 Array<Vector2> uvs = getUpperWallUVs(wall);
                 int uvi = 0;
 

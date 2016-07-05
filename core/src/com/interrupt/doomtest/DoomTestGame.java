@@ -181,6 +181,7 @@ public class DoomTestGame extends ApplicationAdapter {
                         l.left.ceilHeight > temp_int.y;
 
                 boolean nonSolidLowerHit = false;
+                boolean nonSolidUpperHit = false;
 
                 if(l.right != null && !l.solid) {
                     boolean nonSolidLowerFrontFacing = (l.left.floorHeight > l.right.floorHeight && plane.isFrontFacing(camera.direction))
@@ -189,9 +190,16 @@ public class DoomTestGame extends ApplicationAdapter {
                     nonSolidLowerHit = nonSolidLowerFrontFacing &&
                             (l.left.floorHeight > l.right.floorHeight && (l.left.floorHeight > temp_int.y && l.right.floorHeight < temp_int.y)) ||
                             (l.left.floorHeight < l.right.floorHeight && (l.left.floorHeight < temp_int.y && l.right.floorHeight > temp_int.y));
+
+                    boolean nonSolidUpperFrontFacing = (l.left.ceilHeight > l.right.ceilHeight && plane.isFrontFacing(camera.direction))
+                            || (l.left.ceilHeight < l.right.ceilHeight && !plane.isFrontFacing(camera.direction));
+
+                    nonSolidUpperHit = nonSolidUpperFrontFacing &&
+                            (l.left.ceilHeight > l.right.ceilHeight && (l.left.ceilHeight > temp_int.y && l.right.ceilHeight < temp_int.y)) ||
+                            (l.left.ceilHeight < l.right.ceilHeight && (l.left.ceilHeight < temp_int.y && l.right.ceilHeight > temp_int.y));
                 }
 
-                if((solidHit || nonSolidLowerHit)) {
+                if((solidHit || nonSolidLowerHit) || nonSolidUpperHit) {
 
                     float dist = temp_int.dst(camera.position);
                     if(dist < t_dist) {
@@ -483,10 +491,11 @@ public class DoomTestGame extends ApplicationAdapter {
                 intersects.set(sectorIntersection);
             }
             if(hitWall) {
-                if(sectorIntersection == null) intersects.set(wallIntersection);
+                if(!hitSector) intersects.set(wallIntersection);
                 else if(wallIntersection.dst(camera.position) <= sectorIntersection.dst(camera.position)) {
                     intersects.set(wallIntersection);
                 }
+                else hoveredLine = null;
             }
             return true;
         }
