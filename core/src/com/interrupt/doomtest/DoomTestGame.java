@@ -242,6 +242,8 @@ public class DoomTestGame extends ApplicationAdapter {
             if(!intersectsWorld) intersection.set(editPlaneIntersection);
             if(lastIntersection == null) lastIntersection = new Vector3(editPlaneIntersection);
 
+            intersection.y = ((int)(intersection.y * 8f) / 8f);
+
             // round grid point to the grid
             pickedGridPoint.set((int) intersection.x, intersection.y, (int) intersection.z);
             pickedPoint2d.set(intersection.x, intersection.z);
@@ -897,7 +899,7 @@ public class DoomTestGame extends ApplicationAdapter {
                 existing.solid = existing.left.isSolid;
                 existing.right = current;
             }
-            current.floorHeight = existing.left.floorHeight;
+            //current.floorHeight = existing.left.floorHeight;
             current.ceilHeight = existing.left.ceilHeight;
         }
     }
