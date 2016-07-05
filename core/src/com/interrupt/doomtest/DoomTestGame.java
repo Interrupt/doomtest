@@ -335,7 +335,7 @@ public class DoomTestGame extends ApplicationAdapter {
                     else if(hoveredLine != null) pickedLine = hoveredLine;
                     else if(hoveredSector != null) pickedSector = hoveredSector;
 
-                    setSectorHighlights();
+                    setHighlights();
                     refreshSectors();
 
                     lastMousePoint.set(Gdx.input.getX(), Gdx.input.getY());
@@ -456,13 +456,25 @@ public class DoomTestGame extends ApplicationAdapter {
         }
     }
 
+    Vector3 sectorIntersection = new Vector3();
+    Vector3 wallIntersection = new Vector3();
     private boolean intersectsWorld(Ray r, Vector3 intersects) {
-        if(intersectSectors(r, intersects) != null) {
+        boolean hitSector = intersectSectors(r, sectorIntersection) != null;
+        boolean hitWall = intersectWalls(r, wallIntersection) != null;
+
+        if(hitSector || hitWall) {
+            if(hitSector) {
+                intersects.set(sectorIntersection);
+            }
+            if(hitWall) {
+                if(sectorIntersection == null) intersects.set(wallIntersection);
+                else if(wallIntersection.dst(camera.position) < sectorIntersection.dst(camera.position)) {
+                    intersects.set(wallIntersection);
+                }
+            }
             return true;
         }
-        else if(intersectWalls(r, intersects) != null) {
-            return true;
-        }
+
         return false;
     }
 
@@ -858,14 +870,20 @@ public class DoomTestGame extends ApplicationAdapter {
         }
     }
 
-    public void setSectorHighlights() {
+    public void setHighlights() {
         for(Sector s : sectors) {
             resetSectorHighlights(s);
+        }
+        for(Line l : lines) {
+            resetWallHighlights(l);
         }
 
         // update plane colors
         if(pickedSector != null)
             pickedSector.floorMaterial.set(ColorAttribute.createDiffuse(Color.RED));
+
+        if(pickedLine != null)
+            pickedLine.lowerMaterial.set(ColorAttribute.createDiffuse(Color.RED));
     }
 
     public void resetSectorHighlights(Sector sector) {
@@ -873,6 +891,10 @@ public class DoomTestGame extends ApplicationAdapter {
         for(Sector s : sector.subsectors) {
             resetSectorHighlights(s);
         }
+    }
+
+    public void resetWallHighlights(Line line) {
+        line.lowerMaterial.set(ColorAttribute.createDiffuse(Color.WHITE));
     }
 
 	@Override

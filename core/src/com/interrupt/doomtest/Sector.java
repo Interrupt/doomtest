@@ -13,6 +13,7 @@ import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.math.*;
 import com.badlogic.gdx.utils.Array;
+import com.interrupt.doomtest.gfx.Art;
 import org.lwjgl.util.glu.GLUtessellator;
 
 import static org.lwjgl.util.glu.GLU.*;
@@ -29,8 +30,8 @@ public class Sector {
 
     public boolean isSolid = false;
 
-    Material floorMaterial = new Material(ColorAttribute.createDiffuse(Color.WHITE), TextureAttribute.createDiffuse(getTexture("textures/floor1.png")));
-    Material ceilingMaterial = new Material(ColorAttribute.createDiffuse(Color.WHITE), TextureAttribute.createDiffuse(getTexture("textures/ceiling1.png")), IntAttribute.createCullFace(GL20.GL_FRONT));
+    Material floorMaterial = new Material(ColorAttribute.createDiffuse(Color.WHITE), TextureAttribute.createDiffuse(Art.getTexture("textures/floor1.png")));
+    Material ceilingMaterial = new Material(ColorAttribute.createDiffuse(Color.WHITE), TextureAttribute.createDiffuse(Art.getTexture("textures/ceiling1.png")), IntAttribute.createCullFace(GL20.GL_FRONT));
 
     public Sector() { }
 
@@ -60,13 +61,6 @@ public class Sector {
         }
 
         return false;
-    }
-
-    public Texture getTexture(String filename) {
-        Texture texture = new Texture(Gdx.files.internal(filename));
-        texture.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
-        texture.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
-        return texture;
     }
 
     public Array<ModelInstance> tesselate() {

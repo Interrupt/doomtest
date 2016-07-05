@@ -1,17 +1,19 @@
 package com.interrupt.doomtest;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.*;
+import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Mesh;
+import com.badlogic.gdx.graphics.VertexAttribute;
+import com.badlogic.gdx.graphics.VertexAttributes;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Model;
-import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
-import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.graphics.g3d.utils.MeshBuilder;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.ArrayMap;
 import com.badlogic.gdx.utils.FloatArray;
+import com.interrupt.doomtest.gfx.VertexData;
 
 public class WallTesselator {
 
@@ -21,21 +23,25 @@ public class WallTesselator {
 
         VertexAttributes attributes = new VertexAttributes(VertexAttribute.Position(), VertexAttribute.TexCoords(0));
 
-        // texture
-        Texture texture = new Texture(Gdx.files.internal("textures/wall1.png"));
-        texture.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
-        Material material = new Material(ColorAttribute.createDiffuse(Color.WHITE), TextureAttribute.createDiffuse(texture));
-
-        // middle or lower wall
-        MeshBuilder meshBuilder = new MeshBuilder();
-        meshBuilder.begin(attributes);
-        float[] verts = getVertices(linesToDraw);
-        meshBuilder.addMesh(verts, getIndices(verts));
-        Mesh mesh = meshBuilder.end();
-
         ModelBuilder mb = new ModelBuilder();
         mb.begin();
-        mb.part("0", mesh, GL20.GL_TRIANGLES, material);
+
+        ArrayMap<Material, FloatArray> verts = getVertices(linesToDraw).getData();
+
+        // Make meshes by material
+        for(int i = 0; i < verts.size; i++) {
+            Material material = verts.getKeyAt(i);
+            FloatArray fa = verts.get(material);
+            float[] vertices = fa.toArray();
+
+            MeshBuilder meshBuilder = new MeshBuilder();
+            meshBuilder.begin(attributes);
+
+            meshBuilder.addMesh(vertices, getIndices(vertices));
+            Mesh mesh = meshBuilder.end();
+
+            mb.part(Integer.toString(i), mesh, GL20.GL_TRIANGLES, material);
+        }
 
         return mb.end();
     }
@@ -46,8 +52,9 @@ public class WallTesselator {
 
     private static Array<Vector3> getWallVerts(Line line) {
         Array<Vector3> wallVerts = new Array<Vector3>();
+
         if(line.solid) {
-            addSolidWallVerts(wallVerts, line);
+            addSolidWallVerts(line, wallVerts);
         }
         else if(line.right != null) {
             if (line.left.getFloorHeight() != line.right.getFloorHeight()) {
@@ -63,10 +70,11 @@ public class WallTesselator {
                 wallVerts.add(new Vector3(line.end.x, line.left.getCeilingHeight(), line.end.y));
             }
         }
+
         return wallVerts;
     }
 
-    private static void addSolidWallVerts(Array<Vector3> wallVerts, Line line) {
+    private static void addSolidWallVerts(Line line, Array<Vector3> wallVerts) {
         Sector in = line.left;
         if(line.left.isSolid && line.right != null) {
             in = line.right;
@@ -151,16 +159,20 @@ public class WallTesselator {
         return wallUVs;
     }
 
-    private static float[] getVertices(Array<Line> walls) {
+    private static VertexData getVertices(Array<Line> walls) {
         // 4 vertices, 5 attributes each
         //float[] vertices = new float[walls.size * 20];
         //int indx = 0;
 
-        FloatArray vertices = new FloatArray();
+        VertexData vertexData = new VertexData();
 
         for(int i = 0; i < walls.size; i++) {
+
             Line wall = walls.get(i);
             Array<Vector3> wallVerts = getWallVerts(wall);
+
+            FloatArray vertices = vertexData.getVerticesByMaterial(wall.lowerMaterial);
+
             if(wallVerts.size > 0) {
                 Array<Vector2> uvs = getWallUVs(wall);
                 int uvi = 0;
@@ -179,7 +191,7 @@ public class WallTesselator {
             }
         }
 
-        return vertices.toArray();
+        return vertexData;
     }
 
     private static short[] getIndices(float[] vertices) {

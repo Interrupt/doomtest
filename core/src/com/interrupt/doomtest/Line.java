@@ -1,7 +1,12 @@
 package com.interrupt.doomtest;
 
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g3d.Material;
+import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
+import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.Vector2;
+import com.interrupt.doomtest.gfx.Art;
 
 public class Line {
     public Vector2 start;
@@ -10,6 +15,9 @@ public class Line {
 
     public Sector left = null;
     public Sector right = null;
+
+    Material upperMaterial = new Material(ColorAttribute.createDiffuse(Color.WHITE), TextureAttribute.createDiffuse(Art.getTexture("textures/wall1.png")));
+    Material lowerMaterial = new Material(ColorAttribute.createDiffuse(Color.WHITE), TextureAttribute.createDiffuse(Art.getTexture("textures/wall1.png")));
 
     public Line(Vector2 start, Vector2 end, boolean solid, Sector left) {
         this.start = start;
