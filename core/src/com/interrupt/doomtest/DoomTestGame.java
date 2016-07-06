@@ -169,7 +169,7 @@ public class DoomTestGame extends ApplicationAdapter {
             Vector3 p3 = new Vector3(l.end.x, 1, l.end.y);
             Plane plane = new Plane(p1, p2, p3);
 
-            Vector3 endPoint = ray.getEndPoint(new Vector3(), 1000);
+            Vector3 endPoint = ray.getEndPoint(new Vector3(), 10000);
             Vector2 startPoint2d = new Vector2(ray.origin.x, ray.origin.z);
             Vector2 endPoint2d = new Vector2(endPoint.x, endPoint.z);
 
@@ -187,16 +187,12 @@ public class DoomTestGame extends ApplicationAdapter {
                     boolean nonSolidLowerFrontFacing = (l.left.floorHeight > l.right.floorHeight && plane.isFrontFacing(camera.direction))
                             || (l.left.floorHeight < l.right.floorHeight && !plane.isFrontFacing(camera.direction));
 
-                    nonSolidLowerHit = nonSolidLowerFrontFacing &&
-                            (l.left.floorHeight > l.right.floorHeight && (l.left.floorHeight > temp_int.y && l.right.floorHeight < temp_int.y)) ||
-                            (l.left.floorHeight < l.right.floorHeight && (l.left.floorHeight < temp_int.y && l.right.floorHeight > temp_int.y));
+                    nonSolidLowerHit = nonSolidLowerFrontFacing && l.pointInLowerWall(temp_int.y);
 
                     boolean nonSolidUpperFrontFacing = (l.left.ceilHeight > l.right.ceilHeight && plane.isFrontFacing(camera.direction))
                             || (l.left.ceilHeight < l.right.ceilHeight && !plane.isFrontFacing(camera.direction));
 
-                    nonSolidUpperHit = nonSolidUpperFrontFacing &&
-                            (l.left.ceilHeight > l.right.ceilHeight && (l.left.ceilHeight > temp_int.y && l.right.ceilHeight < temp_int.y)) ||
-                            (l.left.ceilHeight < l.right.ceilHeight && (l.left.ceilHeight < temp_int.y && l.right.ceilHeight > temp_int.y));
+                    nonSolidUpperHit = !nonSolidUpperFrontFacing && l.pointInUpperWall(temp_int.y);
                 }
 
                 if((solidHit || nonSolidLowerHit) || nonSolidUpperHit) {

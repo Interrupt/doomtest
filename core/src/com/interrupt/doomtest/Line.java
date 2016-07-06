@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.math.Intersector;
+import com.badlogic.gdx.math.Plane;
 import com.badlogic.gdx.math.Vector2;
 import com.interrupt.doomtest.gfx.Art;
 
@@ -57,27 +58,21 @@ public class Line {
         return null;
     }
 
-    public Sector getHigherFloorSector() {
-        if(left == null || right == null) return null;
-        if(left.getFloorHeight() >= right.getFloorHeight()) return left;
-        return right;
+    public boolean pointInLowerWall(float height) {
+        if(right != null) {
+            float max = Math.max(left.floorHeight, right.floorHeight);
+            float min = Math.min(left.floorHeight, right.floorHeight);
+            return height > min && height < max;
+        }
+        return false;
     }
 
-    public Sector getLowerFloorSector() {
-        if(left == null || right == null) return null;
-        if(left.getFloorHeight() < right.getFloorHeight()) return left;
-        return right;
-    }
-
-    public Sector getHigherCeilingSector() {
-        if(left == null || right == null) return null;
-        if(left.getCeilingHeight() >= right.getCeilingHeight()) return left;
-        return right;
-    }
-
-    public Sector getLowerCeilingSector() {
-        if(left == null || right == null) return null;
-        if(left.getCeilingHeight() < right.getCeilingHeight()) return left;
-        return right;
+    public boolean pointInUpperWall(float height) {
+        if(right != null) {
+            float max = Math.max(left.ceilHeight, right.ceilHeight);
+            float min = Math.min(left.ceilHeight, right.ceilHeight);
+            return height > min && height < max;
+        }
+        return false;
     }
 }
