@@ -15,7 +15,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.collision.Ray;
 import com.badlogic.gdx.utils.Array;
-import com.interrupt.doomtest.gfx.WallTesselator;
+import com.interrupt.doomtest.gfx.renderer.RendererFrontend;
 import com.interrupt.doomtest.input.EditorCameraController;
 import com.interrupt.doomtest.levels.Level;
 import com.interrupt.doomtest.levels.Line;
@@ -25,15 +25,13 @@ import com.interrupt.doomtest.levels.editor.Editor;
 
 public class DoomTestEditor extends ApplicationAdapter {
 
-    ModelBatch batch;
     Camera camera;
     EditorCameraController camController;
     ShapeRenderer lineRenderer;
+    RendererFrontend renderer;
 
-    public Array<ModelInstance> models = new Array<ModelInstance>();
     public Level level = new Level();
     public Editor editor = new Editor(level);
-
     public Sector current;
     Plane editPlane = new Plane(Vector3.Y, Vector3.Zero);
 
@@ -77,8 +75,6 @@ public class DoomTestEditor extends ApplicationAdapter {
 
 	@Override
 	public void create () {
-        batch = new ModelBatch();
-
         camera = new PerspectiveCamera(67, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         camera.up.set(Vector3.Y);
         camera.position.set(0f, 20f, -5f);
@@ -96,18 +92,11 @@ public class DoomTestEditor extends ApplicationAdapter {
         Gdx.input.setInputProcessor(camController);
 
         lineRenderer = new ShapeRenderer();
+        renderer = new RendererFrontend();
 	}
 
-    public void refreshSectors() {
-        models.clear();
-
-        for(Sector sector : level.sectors) {
-            // turn the sector into a model
-            models.addAll(sector.tesselate());
-        }
-
-        // walls!
-        models.add(new ModelInstance(WallTesselator.tesselate(level.lines)));
+    public void refreshRenderer() {
+        renderer.setLevel(level);
     }
 
     public void update() {
@@ -141,7 +130,7 @@ public class DoomTestEditor extends ApplicationAdapter {
                     Sector picked = hoveredSector;
                     picked.isSolid = !picked.isSolid;
                     editor.refreshLineSolidity(picked);
-                    refreshSectors();
+                    refreshRenderer();
                 }
 
                 if(Gdx.input.isKeyJustPressed(Input.Keys.R)) {
@@ -150,7 +139,7 @@ public class DoomTestEditor extends ApplicationAdapter {
 
                     Sector picked = hoveredSector;
                     picked.floorHeight += mod;
-                    refreshSectors();
+                    refreshRenderer();
                 }
 
                 if(Gdx.input.isKeyJustPressed(Input.Keys.T)) {
@@ -159,7 +148,7 @@ public class DoomTestEditor extends ApplicationAdapter {
 
                     Sector picked = hoveredSector;
                     picked.ceilHeight += mod;
-                    refreshSectors();
+                    refreshRenderer();
                 }
 
                 // snap to nearest line
@@ -236,7 +225,7 @@ public class DoomTestEditor extends ApplicationAdapter {
                     else if(hoveredSector != null) pickedSector = hoveredSector;
 
                     setHighlights();
-                    refreshSectors();
+                    refreshRenderer();
 
                     lastMousePoint.set(Gdx.input.getX(), Gdx.input.getY());
                     if(pickedSector != null) {
@@ -251,11 +240,11 @@ public class DoomTestEditor extends ApplicationAdapter {
                     if(pickedLine != null) {
                         pickedLine.start.add((int)editPlaneIntersection.x - (int)lastIntersection.x, (int)editPlaneIntersection.z - (int)lastIntersection.z);
                         pickedLine.end.add((int)editPlaneIntersection.x - (int)lastIntersection.x, (int)editPlaneIntersection.z - (int)lastIntersection.z);
-                        refreshSectors();
+                        refreshRenderer();
                     }
                     else if(pickedPoint != null) {
                         pickedPoint.add((int)editPlaneIntersection.x - (int)lastIntersection.x, (int)editPlaneIntersection.z - (int)lastIntersection.z);
-                        refreshSectors();
+                        refreshRenderer();
                     }
                     else if(pickedSector != null) {
                         boolean heightMode = Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT) || Gdx.input.isKeyPressed(Input.Keys.ALT_RIGHT);
@@ -279,7 +268,7 @@ public class DoomTestEditor extends ApplicationAdapter {
                             }
                         }
 
-                        refreshSectors();
+                        refreshRenderer();
                     }
                     wasDragging = true;
                 }
@@ -290,7 +279,7 @@ public class DoomTestEditor extends ApplicationAdapter {
                 if(Gdx.input.justTouched() && Gdx.input.isButtonPressed(Input.Buttons.RIGHT)) {
                     if(pickedSector != null && hoveredSector != null) {
                         hoveredSector.match(pickedSector);
-                        refreshSectors();
+                        refreshRenderer();
                     }
                 }
 
@@ -306,7 +295,7 @@ public class DoomTestEditor extends ApplicationAdapter {
                         editor.deleteVertex(pickedLine.end);
                     }
 
-                    refreshSectors();
+                    refreshRenderer();
 
                     pickedPoint = null;
                     pickedSector = null;
@@ -331,7 +320,7 @@ public class DoomTestEditor extends ApplicationAdapter {
                             editor.addPointToLine(l, i);
                         }
                     }
-                    refreshSectors();
+                    refreshRenderer();
                 }
             }
         }
@@ -412,7 +401,7 @@ public class DoomTestEditor extends ApplicationAdapter {
 
         current = null;
 
-        refreshSectors();
+        refreshRenderer();
     }
 
     public void finishSector() {
@@ -475,7 +464,7 @@ public class DoomTestEditor extends ApplicationAdapter {
         }
 
         current = null;
-        refreshSectors();
+        refreshRenderer();
 
         editHeight = null;
         editPlane.set(Vector3.Zero, Vector3.Y);
@@ -518,7 +507,7 @@ public class DoomTestEditor extends ApplicationAdapter {
             }
 
             if(hoveredLine != null || pickedLine != null || hoveredSector != null || pickedSector != null) {
-                for (ModelInstance m : models) {
+                for (ModelInstance m : renderer.getLevelModels()) {
                     if(hoveredLine != null) {
                         Material material = m.getMaterial(hoveredLine.hashCode() + "_lower");
                         if (material != null) {
@@ -560,9 +549,7 @@ public class DoomTestEditor extends ApplicationAdapter {
 
             renderGrid();
 
-            batch.begin(camera);
-            batch.render(models);
-            batch.end();
+            renderer.render(camera);
 
             for(Sector sector : level.sectors) {
                 renderPoints(sector, Color.WHITE);
