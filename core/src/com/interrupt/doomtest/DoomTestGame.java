@@ -17,6 +17,7 @@ import com.badlogic.gdx.math.collision.Ray;
 import com.badlogic.gdx.utils.Array;
 import com.interrupt.doomtest.gfx.WallTesselator;
 import com.interrupt.doomtest.input.EditorCameraController;
+import com.interrupt.doomtest.levels.Level;
 import com.interrupt.doomtest.levels.Line;
 import com.interrupt.doomtest.levels.Sector;
 
@@ -29,9 +30,7 @@ public class DoomTestGame extends ApplicationAdapter {
     ShapeRenderer lineRenderer;
 
     public Array<ModelInstance> models = new Array<ModelInstance>();
-    public Array<Sector> sectors;
-    public Array<Line> lines;
-    public Array<Vector2> vertices = new Array<Vector2>();
+    public Level level = new Level();
 
     public Sector current;
     Plane editPlane = new Plane(Vector3.Y, Vector3.Zero);
@@ -95,31 +94,18 @@ public class DoomTestGame extends ApplicationAdapter {
         Gdx.input.setInputProcessor(camController);
 
         lineRenderer = new ShapeRenderer();
-
-        // The level, a list of sectors and lines
-        sectors = new Array<Sector>();
-        lines = new Array<Line>();
 	}
 
     public void refreshSectors() {
         models.clear();
 
-        for(Sector sector : sectors) {
+        for(Sector sector : level.sectors) {
             // turn the sector into a model
             models.addAll(sector.tesselate());
         }
 
         // walls!
-        models.add(new ModelInstance(WallTesselator.tesselate(lines)));
-    }
-
-    public Sector pickSector(Vector2 point) {
-        for(Sector s : sectors) {
-            if(s.isPointInside(point)) {
-                return s.getSectorOfPoint(point);
-            }
-        }
-        return null;
+        models.add(new ModelInstance(WallTesselator.tesselate(level.lines)));
     }
 
     public Array<Sector> collectAllSectorsIn(Sector sector, Array<Sector> collected) {
@@ -134,7 +120,7 @@ public class DoomTestGame extends ApplicationAdapter {
     public Sector intersectSectors(Ray r, Vector3 closest) {
         // Get all sectors into one list
         Array<Sector> allSectors = new Array<Sector>();
-        for(Sector s : sectors) {
+        for(Sector s : level.sectors) {
             collectAllSectorsIn(s, allSectors);
         }
 
@@ -166,7 +152,7 @@ public class DoomTestGame extends ApplicationAdapter {
         float t_dist = 10000;
         Line closestLine = null;
 
-        for(Line l : lines) {
+        for(Line l : level.lines) {
             Vector3 p1 = new Vector3(l.start.x, 0, l.start.y);
             Vector3 p2 = new Vector3(l.end.x, 0, l.end.y);
             Vector3 p3 = new Vector3(l.end.x, 1, l.end.y);
@@ -214,7 +200,7 @@ public class DoomTestGame extends ApplicationAdapter {
     }
 
     public void refreshLineSolidity(Sector sector) {
-        for(Line line : lines) {
+        for(Line line : level.lines) {
             if(line.left == sector || line.right == sector) {
                 if (line.right == null) {
                     line.solid = !sector.isSolid;
@@ -289,7 +275,7 @@ public class DoomTestGame extends ApplicationAdapter {
                 }
 
                 // snap to nearest point
-                Vector2 hovering = getVertexNear(intersection.x, intersection.z, 0.25f);
+                Vector2 hovering = level.getVertexNear(intersection.x, intersection.z, 0.25f);
                 if(hovering != null) {
                     pickedGridPoint.x = hovering.x;
                     pickedGridPoint.z = hovering.y;
@@ -339,7 +325,7 @@ public class DoomTestGame extends ApplicationAdapter {
                         wasDragging = false;
                     }
 
-                    hoveredPoint = getVertexNear(intersection.x, intersection.z, 0.25f);
+                    hoveredPoint = level.getVertexNear(intersection.x, intersection.z, 0.25f);
                     if(hoveredPoint != null) hoveredLine = null;
                 }
 
@@ -414,13 +400,13 @@ public class DoomTestGame extends ApplicationAdapter {
                 // Delete sectors or points
                 if (Gdx.input.isKeyJustPressed(Input.Keys.DEL)) {
                     if(pickedPoint != null) {
-                        deleteVertex(pickedPoint);
+                        level.deleteVertex(pickedPoint);
                     }
                     else if(pickedSector != null) {
-                        deleteSector(pickedSector);
+                        level.deleteSector(pickedSector);
                     }
                     else if(pickedLine != null) {
-                        deleteVertex(pickedLine.end);
+                        level.deleteVertex(pickedLine.end);
                     }
 
                     refreshSectors();
@@ -441,7 +427,7 @@ public class DoomTestGame extends ApplicationAdapter {
                     splitEnd.set(pickedPoint2d);
                 }
                 else if(Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
-                    Array<Line> checking = new Array<Line>(lines);
+                    Array<Line> checking = new Array<Line>(level.lines);
                     for(Line l : checking) {
                         Vector2 i = l.findIntersection(splitStart, splitEnd);
                         if(i != null) {
@@ -512,15 +498,15 @@ public class DoomTestGame extends ApplicationAdapter {
         if(point == l.start || point == l.end) return;
 
         Vector2 v = getExistingVertex(point);
-        if(v == null) vertices.add(point);
+        if(v == null) level.vertices.add(point);
 
         Vector2 oldEnd = l.end;
         l.end = point;
 
         Line newLine = new Line(point, oldEnd, l.solid, l.left, l.right);
-        lines.add(newLine);
+        level.lines.add(newLine);
 
-        addNewPointToSector(new Line(l.start, oldEnd, l.solid, l.left, l.right), point, sectors);
+        addNewPointToSector(new Line(l.start, oldEnd, l.solid, l.left, l.right), point, level.sectors);
     }
 
     private void addNewPointToSector(Line line, Vector2 point, Array<Sector> sectors) {
@@ -545,7 +531,7 @@ public class DoomTestGame extends ApplicationAdapter {
 
     Vector2 findPicked_t = new Vector2();
     private Line findPickedLine(Vector3 hovered) {
-        for(Line l : lines) {
+        for(Line l : level.lines) {
             findPicked_t.set(hovered.x, hovered.z);
             float dist = Intersector.distanceSegmentPoint(l.start, l.end, findPicked_t);
             if(dist < 0.175f) return l;
@@ -553,98 +539,19 @@ public class DoomTestGame extends ApplicationAdapter {
         return null;
     }
 
-    private void deleteVertex(Vector2 vertex) {
-        for(Sector s : sectors) {
-            s.removePoint(vertex);
-        }
 
-        Array<Line> linesToDelete = new Array<Line>();
-        for(Line l : lines) {
-            if(l.end == vertex) {
-                linesToDelete.add(l);
-                Array<Line> nexts = findLinesWithStartVertexInSector(vertex, l.left);
-                for(Line next : nexts) {
-                    if (next != null) {
-                        next.start = l.start;
-                    }
-                }
-            }
-        }
-
-        lines.removeAll(linesToDelete, true);
-    }
-
-    private Array<Line> findLinesWithStartVertexInSector(Vector2 vertex, Sector sector) {
-        Array<Line> r = new Array<Line>();
-        for(int i = 0; i < lines.size; i++) {
-            Line l = lines.get(i);
-            if(l.start == vertex && l.left == sector)
-                r.add(l);
-        }
-        return r;
-    }
-
-    private void deleteLinesForSector(Sector sector) {
-        Array<Line> linesToRemove = new Array<Line>();
-
-        for(Line l : lines) {
-            if(l.left == sector) {
-                if(l.right == null) {
-                    if(sector.parent != null &&
-                            sector.parent.points.contains(l.start, true) &&
-                            sector.parent.points.contains(l.end, true)) {
-                        l.left = sector.parent;
-                    }
-                    else {
-                        linesToRemove.add(l);
-                    }
-                }
-                else {
-                    l.left = l.right;
-                    l.right = null;
-                }
-            }
-        }
-
-        lines.removeAll(linesToRemove, true);
-
-        for(Sector s : sector.subsectors) {
-            deleteLinesForSector(s);
-        }
-    }
-
-    private void deleteSector(Sector sector) {
-        if(sector.parent != null) {
-            sector.parent.subsectors.removeValue(sector, true);
-        }
-        else {
-            sectors.removeValue(sector, true);
-        }
-
-        deleteLinesForSector(sector);
-    }
-
-    private Vector2 getVertexNear(float x, float y, float distance) {
-        for(Vector2 v : vertices) {
-            float d = v.dst(x, y);
-            if(d < distance) {
-                return v;
-            }
-        }
-        return null;
-    }
 
     private void splitSectors(Vector2 start, Vector2 end) {
         Array<Sector> toRemove = new Array<Sector>();
         Array<Sector> newSplits = new Array<Sector>();
-        for(Sector s : sectors) {
+        for(Sector s : level.sectors) {
             if(s.lineIntersects(start, end)) {
                 Array<Sector> splits =
                         s.split(new Plane(
                                         new Vector3(start.x, 0, start.y),
                                         new Vector3(end.x, 0, end.y),
                                         new Vector3(end.x, 1, end.y)),
-                                vertices);
+                                level.vertices);
 
                 if (splits.size > 0) {
                     toRemove.add(s);
@@ -657,12 +564,12 @@ public class DoomTestGame extends ApplicationAdapter {
 
         // remove the old, unsplit sector
         for(Sector s : toRemove) {
-            sectors.removeValue(s, true);
+            level.sectors.removeValue(s, true);
         }
 
         // add the new splits
         for(Sector s : newSplits) {
-            sectors.add(s);
+            level.sectors.add(s);
         }
 
         refreshSectors();
@@ -670,13 +577,13 @@ public class DoomTestGame extends ApplicationAdapter {
 
     private void cancelEditingSector() {
         if (current.parent == null)
-            sectors.removeValue(current, true);
+            level.sectors.removeValue(current, true);
         else
             current.parent.subsectors.removeValue(current, true);
 
         // remove the lines without a sector anymore
         Array<Line> orphanLines = new Array<Line>();
-        for (Line line : lines) {
+        for (Line line : level.lines) {
             if (line.left == current) {
                 orphanLines.add(line);
             } else if (line.right == current) {
@@ -684,7 +591,7 @@ public class DoomTestGame extends ApplicationAdapter {
             }
         }
         for (Line orphan : orphanLines) {
-            lines.removeValue(orphan, true);
+            level.lines.removeValue(orphan, true);
         }
 
         current = null;
@@ -692,18 +599,8 @@ public class DoomTestGame extends ApplicationAdapter {
         refreshSectors();
     }
 
-    private boolean isValidSectorForNextPoint(Vector3 pickedGridPoint) {
-        if(current.parent == null)
-            return true;
-        else if(current.parent == hoveredSector)
-            return true;
-        else {
-            return vertexExists(new Vector2(pickedGridPoint.x, pickedGridPoint.z));
-        }
-    }
-
     public boolean vertexExists(Vector2 vertex) {
-        for(Line line : lines) {
+        for(Line line : level.lines) {
             if(line.start.equals(vertex) || line.end.equals(vertex))
                 return true;
         }
@@ -711,14 +608,14 @@ public class DoomTestGame extends ApplicationAdapter {
     }
 
     public Vector2 getExistingVertex(Vector2 vertex) {
-        int found = vertices.indexOf(vertex, false);
-        if(found >= 0) return vertices.get(found);
+        int found = level.vertices.indexOf(vertex, false);
+        if(found >= 0) return level.vertices.get(found);
         return null;
     }
 
     public void addVertex(Vector2 vertex) {
         Vector2 existing = getExistingVertex(vertex);
-        if(existing == null) vertices.add(vertex);
+        if(existing == null) level.vertices.add(vertex);
     }
 
     public void finishSector() {
@@ -737,7 +634,7 @@ public class DoomTestGame extends ApplicationAdapter {
 
             // find the parent, if there is one
             Sector parent = null;
-            for (Sector s : sectors) {
+            for (Sector s : level.sectors) {
                 Sector containing = s.getSectorOfSector(current);
                 if (containing != null) parent = containing;
             }
@@ -770,7 +667,7 @@ public class DoomTestGame extends ApplicationAdapter {
             }
 
             if (parent == null)
-                sectors.add(current);
+                level.sectors.add(current);
 
 
             // solid parents mean line solidity might change now
@@ -793,7 +690,7 @@ public class DoomTestGame extends ApplicationAdapter {
                 newParent.subsectors.removeValue(s, true);
                 sector.addSubSector(s);
 
-                for(Line l : lines) {
+                for(Line l : level.lines) {
                     if(l.left == s || l.right == s) {
                         if (l.right == newParent) {
                             l.right = sector;
@@ -809,7 +706,7 @@ public class DoomTestGame extends ApplicationAdapter {
 
     private void updateSectorOwnership(Sector sector) {
         Sector parent = null;
-        for(Sector s : sectors) {
+        for(Sector s : level.sectors) {
             if(s != sector && parent == null) {
                 parent = s.getSectorOfSector(sector);
             }
@@ -820,13 +717,13 @@ public class DoomTestGame extends ApplicationAdapter {
                 sector.parent.subsectors.removeValue(sector, true);
             }
             else {
-                sectors.removeValue(sector, true);
+                level.sectors.removeValue(sector, true);
             }
 
             Sector oldParent = sector.parent;
             parent.addSubSector(sector);
 
-            for(Line l : lines) {
+            for(Line l : level.lines) {
                 if(l.left == sector) {
                     if(l.right == null || l.right == oldParent) {
                         l.right = parent;
@@ -840,9 +737,9 @@ public class DoomTestGame extends ApplicationAdapter {
             sector.parent.subsectors.removeValue(sector, true);
             sector.parent = null;
 
-            sectors.add(sector);
+            level.sectors.add(sector);
 
-            for(Line l : lines) {
+            for(Line l : level.lines) {
                 if(l.left == sector) {
                     if(l.right == oldParent) {
                         l.right = null;
@@ -880,7 +777,7 @@ public class DoomTestGame extends ApplicationAdapter {
 
         // check if this exists already
         Line existing = null;
-        for(Line l : lines) {
+        for(Line l : level.lines) {
            if(l.isEqualTo(line)) {
                existing = l;
                break;
@@ -888,7 +785,7 @@ public class DoomTestGame extends ApplicationAdapter {
         }
 
         if(existing == null) {
-            lines.add(line);
+            level.lines.add(line);
         }
         else {
             if(existing.left == current.parent) {
@@ -904,10 +801,10 @@ public class DoomTestGame extends ApplicationAdapter {
     }
 
     public void setHighlights() {
-        for(Sector s : sectors) {
+        for(Sector s : level.sectors) {
             resetSectorHighlights(s);
         }
-        for(Line l : lines) {
+        for(Line l : level.lines) {
             resetWallHighlights(l);
         }
 
@@ -986,7 +883,7 @@ public class DoomTestGame extends ApplicationAdapter {
             batch.render(models);
             batch.end();
 
-            for(Sector sector : sectors) {
+            for(Sector sector : level.sectors) {
                 renderPoints(sector, Color.WHITE);
             }
 
@@ -1005,7 +902,7 @@ public class DoomTestGame extends ApplicationAdapter {
                     Vector2 point = pickedPoint;
                     if(point == null) point = hoveredPoint;
 
-                    for(Sector s : getAllSectorsWithVertex(sectors, point, new Array<Sector>())) {
+                    for(Sector s : level.getAllSectorsWithVertex(level.sectors, point, new Array<Sector>())) {
                         float pointSize = 0.2f;
                         lineRenderer.begin(ShapeRenderer.ShapeType.Filled);
                         lineRenderer.setColor(Color.RED);
@@ -1033,16 +930,6 @@ public class DoomTestGame extends ApplicationAdapter {
             Gdx.app.log("Error", t.getMessage());
         }
 	}
-
-    public Array<Sector> getAllSectorsWithVertex(Array<Sector> search, Vector2 vertex, Array<Sector> found) {
-        for(Sector s : search) {
-            if(s.points.contains(vertex, true)) {
-                found.add(s);
-            }
-            getAllSectorsWithVertex(s.subsectors, vertex, found);
-        }
-        return found;
-    }
 
     public void renderSectorWireframe(Sector s, Color color) {
         Array<Vector2> points = s.getPoints();
