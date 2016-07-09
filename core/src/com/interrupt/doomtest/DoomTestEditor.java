@@ -17,13 +17,14 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.collision.Ray;
 import com.badlogic.gdx.utils.Array;
+import com.interrupt.doomtest.collisions.WorldIntersection;
+import com.interrupt.doomtest.collisions.WorldIntersector;
 import com.interrupt.doomtest.gfx.renderer.RendererFrontend;
 import com.interrupt.doomtest.input.EditorCameraController;
 import com.interrupt.doomtest.levels.Level;
 import com.interrupt.doomtest.levels.Line;
 import com.interrupt.doomtest.levels.Sector;
 import com.interrupt.doomtest.levels.editor.Editor;
-
 
 public class DoomTestEditor extends ApplicationAdapter {
 
@@ -46,6 +47,7 @@ public class DoomTestEditor extends ApplicationAdapter {
     Vector3 intersection = new Vector3();
     Vector3 pickedGridPoint = new Vector3();
     Vector2 pickedPoint2d = new Vector2();
+    WorldIntersection worldIntersection = new WorldIntersection();
 
     Float editHeight = null;
 
@@ -107,12 +109,18 @@ public class DoomTestEditor extends ApplicationAdapter {
         if(lastIntersection != null)
             lastIntersection.set(editPlaneIntersection);
 
-        boolean intersectsWorld = intersectsWorld(r, intersection);
+        boolean intersectsWorld = WorldIntersector.intersectsWorld(level, r, worldIntersection);
         boolean intersectsEditPlane = Intersector.intersectRayPlane(r, editPlane, editPlaneIntersection);
 
         if(intersectsWorld || intersectsEditPlane) {
+            // Where is the intersection point with the world?
+            if(intersectsWorld) intersection.set(worldIntersection.intersectionPoint);
+            else intersection.set(editPlaneIntersection);
 
-            if(!intersectsWorld) intersection.set(editPlaneIntersection);
+            // What sectors / lines are being picked now?
+            hoveredLine = worldIntersection.hitLine;
+            hoveredSector = worldIntersection.hitSector;
+
             if(lastIntersection == null) lastIntersection = new Vector3(editPlaneIntersection);
 
             intersection.y = ((int)(intersection.y * 8f) / 8f);
@@ -350,36 +358,6 @@ public class DoomTestEditor extends ApplicationAdapter {
                 editorMode = EditorModes.SPLIT;
             }
         }
-    }
-
-    Vector3 sectorIntersection = new Vector3();
-    Vector3 wallIntersection = new Vector3();
-    private boolean intersectsWorld(Ray r, Vector3 intersects) {
-        hoveredSector = editor.intersectSectors(camera, r, sectorIntersection);
-        hoveredLine = editor.intersectWalls(camera, r, wallIntersection);
-
-        boolean hitSector = hoveredSector != null;
-        boolean hitWall = hoveredLine != null;
-
-        if(hitSector || hitWall) {
-            if(hitSector) {
-                intersects.set(sectorIntersection);
-            }
-            if(hitWall) {
-                if(!hitSector) {
-                    intersects.set(wallIntersection);
-                    hoveredSector = null;
-                }
-                else if(wallIntersection.dst(camera.position) <= sectorIntersection.dst(camera.position)) {
-                    intersects.set(wallIntersection);
-                    hoveredSector = null;
-                }
-                else hoveredLine = null;
-            }
-            return true;
-        }
-
-        return false;
     }
 
     private void cancelEditingSector() {
