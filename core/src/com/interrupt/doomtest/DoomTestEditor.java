@@ -23,7 +23,7 @@ import com.interrupt.doomtest.levels.Sector;
 import com.interrupt.doomtest.levels.editor.Editor;
 
 
-public class DoomTestGame extends ApplicationAdapter {
+public class DoomTestEditor extends ApplicationAdapter {
 
     ModelBatch batch;
     Camera camera;
