@@ -1,4 +1,4 @@
-package com.interrupt.doomtest.gfx;
+package com.interrupt.doomtest.gfx.tesselators;
 
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.utils.ArrayMap;

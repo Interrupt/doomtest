@@ -3,7 +3,8 @@ package com.interrupt.doomtest.gfx.renderer;
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.utils.Array;
-import com.interrupt.doomtest.gfx.WallTesselator;
+import com.interrupt.doomtest.gfx.tesselators.SectorTesselator;
+import com.interrupt.doomtest.gfx.tesselators.WallTesselator;
 import com.interrupt.doomtest.levels.Level;
 import com.interrupt.doomtest.levels.Sector;
 
@@ -16,7 +17,7 @@ public class RendererFrontend {
 
         for(Sector sector : level.sectors) {
             // turn the sector into a model
-            levelModels.addAll(sector.tesselate());
+            levelModels.addAll(SectorTesselator.tesselate(sector));
         }
 
         // walls!

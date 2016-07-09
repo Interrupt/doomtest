@@ -1,4 +1,4 @@
-package com.interrupt.doomtest.gfx;
+package com.interrupt.doomtest.gfx.tesselators;
 
 public class VertexData {
     public double[] data;

@@ -3,20 +3,15 @@ package com.interrupt.doomtest.levels;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g3d.Material;
-import com.badlogic.gdx.graphics.g3d.Model;
-import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.IntAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
-import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
-import com.badlogic.gdx.math.*;
+import com.badlogic.gdx.math.Intersector;
+import com.badlogic.gdx.math.Plane;
+import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.interrupt.doomtest.gfx.Art;
-import com.interrupt.doomtest.gfx.TessCallback;
-import com.interrupt.doomtest.gfx.VertexData;
-import org.lwjgl.util.glu.GLUtessellator;
-
-import static org.lwjgl.util.glu.GLU.*;
 
 public class Sector {
     public Array<Vector2> points = new Array<Vector2>();
@@ -26,12 +21,10 @@ public class Sector {
     public float floorHeight = 0;
     public float ceilHeight = 2;
 
-    private static GLUtessellator tesselator = gluNewTess();
-
     public boolean isSolid = false;
 
     public Material floorMaterial = new Material(this.hashCode() + "_floor", ColorAttribute.createDiffuse(Color.WHITE), TextureAttribute.createDiffuse(Art.getTexture("textures/floor1.png")));
-    Material ceilingMaterial = new Material(this.hashCode() + "_ceiling", ColorAttribute.createDiffuse(Color.WHITE), TextureAttribute.createDiffuse(Art.getTexture("textures/ceiling1.png")), IntAttribute.createCullFace(GL20.GL_FRONT));
+    public Material ceilingMaterial = new Material(this.hashCode() + "_ceiling", ColorAttribute.createDiffuse(Color.WHITE), TextureAttribute.createDiffuse(Art.getTexture("textures/ceiling1.png")), IntAttribute.createCullFace(GL20.GL_FRONT));
 
     public Sector() { }
 
@@ -61,101 +54,6 @@ public class Sector {
         }
 
         return false;
-    }
-
-    public Array<ModelInstance> tesselate() {
-
-        TessCallback callback = new TessCallback(floorMaterial);
-
-        tesselator.gluTessCallback(GLU_TESS_VERTEX, callback);
-        tesselator.gluTessCallback(GLU_TESS_BEGIN, callback);
-        tesselator.gluTessCallback(GLU_TESS_END, callback);
-        tesselator.gluTessCallback(GLU_TESS_COMBINE, callback);
-
-        tesselator.gluTessProperty(GLU_TESS_WINDING_RULE, GLU_TESS_WINDING_ODD);
-
-        tesselator.gluTessNormal(0, 1, 0);
-
-        if (!isSolid) {
-            tesselator.gluTessBeginPolygon(null);
-
-            // Carve the main sector
-            tesselateContour(this, tesselator, callback);
-
-            // Now, carve out all the sub sectors
-            for(int i = 0; i < subsectors.size; i++) {
-                tesselateContour(subsectors.get(i), tesselator, callback);
-            }
-
-            tesselator.gluEndPolygon();
-        }
-
-        // Start building the mesh
-        Array<TessCallback.MeshPiece> meshPieces = callback.meshPieces;
-
-        Model model = makeModelFromMeshPieces(meshPieces);
-        ModelInstance mi = new ModelInstance(model);
-        mi.transform.setTranslation(0, getFloorHeight(), 0);
-
-        Array<ModelInstance> instances = new Array<ModelInstance>();
-        instances.add(mi);
-
-        for (Sector subsector : subsectors) {
-            instances.addAll(subsector.tesselate());
-        }
-
-        return instances;
-    }
-
-    private Model makeModelFromMeshPieces(Array<TessCallback.MeshPiece> meshPieces) {
-        ModelBuilder mb = new ModelBuilder();
-        mb.begin();
-        mb.node("floor", makeFloorModel(meshPieces));
-        mb.node("ceiling", makeCeilingModel(meshPieces));
-        Model built = mb.end();
-        built.getNode("ceiling").translation.set(0, ceilHeight - floorHeight, 0);
-        return built;
-    }
-
-    private Model makeFloorModel(Array<TessCallback.MeshPiece> meshPieces) {
-        ModelBuilder mb = new ModelBuilder();
-        mb.begin();
-        int indx = 0;
-        for(TessCallback.MeshPiece m : meshPieces) {
-            mb.part((indx++) + "", m.mesh, m.drawType, floorMaterial);
-        }
-        return mb.end();
-    }
-
-    private Model makeCeilingModel(Array<TessCallback.MeshPiece> meshPieces) {
-        ModelBuilder mb = new ModelBuilder();
-        mb.begin();
-        int indx = 0;
-        Matrix4 transform = new Matrix4().translate(0, ceilHeight - floorHeight, 0);
-        for(TessCallback.MeshPiece m : meshPieces) {
-            mb.part((indx++) + "", m.mesh, m.drawType, ceilingMaterial);
-        }
-        return mb.end();
-    }
-
-    private void tesselateContour(Sector sector, GLUtessellator tesselator, TessCallback callback) {
-        // Tesselate the current contour
-        Array<Vector2> vertices = sector.getPoints();
-        tesselator.gluTessBeginContour();
-        for (int x = 0; x < vertices.size; x++) //loop through the vertices
-        {
-            double[] data = vertexToDoubles(vertices.get(x));
-            tesselator.gluTessVertex(data, 0, new VertexData(data)); //store the vertex
-        }
-        tesselator.gluTessEndContour();
-    }
-
-    private double[] vertexToDoubles(Vector2 vertex) {
-        double[] data = new double[3];
-        data[0] = vertex.x;
-        data[1] = 0;
-        data[2] = vertex.y;
-        return data;
     }
 
     public Sector getSectorOfPoint(Vector2 point) {

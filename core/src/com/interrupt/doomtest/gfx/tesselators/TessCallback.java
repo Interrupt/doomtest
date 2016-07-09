@@ -1,4 +1,4 @@
-package com.interrupt.doomtest.gfx;
+package com.interrupt.doomtest.gfx.tesselators;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Mesh;
@@ -10,7 +10,6 @@ import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.utils.MeshBuilder;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.utils.Array;
-import com.interrupt.doomtest.gfx.VertexData;
 import org.lwjgl.util.glu.GLUtessellatorCallbackAdapter;
 
 public class TessCallback extends GLUtessellatorCallbackAdapter {

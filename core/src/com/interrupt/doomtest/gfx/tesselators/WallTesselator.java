@@ -1,4 +1,4 @@
-package com.interrupt.doomtest.gfx;
+package com.interrupt.doomtest.gfx.tesselators;
 
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Mesh;
@@ -13,7 +13,6 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ArrayMap;
 import com.badlogic.gdx.utils.FloatArray;
-import com.interrupt.doomtest.gfx.VertexDataByMaterial;
 import com.interrupt.doomtest.levels.Line;
 import com.interrupt.doomtest.levels.Sector;
 
