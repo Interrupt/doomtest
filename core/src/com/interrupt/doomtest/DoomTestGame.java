@@ -15,7 +15,10 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.collision.Ray;
 import com.badlogic.gdx.utils.Array;
+import com.interrupt.doomtest.gfx.WallTesselator;
 import com.interrupt.doomtest.input.EditorCameraController;
+import com.interrupt.doomtest.levels.Line;
+import com.interrupt.doomtest.levels.Sector;
 
 
 public class DoomTestGame extends ApplicationAdapter {
