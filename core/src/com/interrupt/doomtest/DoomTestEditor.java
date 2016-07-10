@@ -83,7 +83,7 @@ public class DoomTestEditor extends ApplicationAdapter {
 	public void create () {
         camera = new PerspectiveCamera(67, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         camera.up.set(Vector3.Y);
-        camera.position.set(0f, 80f, -5f);
+        camera.position.set(0f, 60f, -5f);
 
         Vector3 tmpV1 = new Vector3(camera.direction).crs(camera.up).nor();
         camera.direction.rotate(tmpV1, -70f);
@@ -173,7 +173,7 @@ public class DoomTestEditor extends ApplicationAdapter {
                 }
 
                 // snap to nearest point
-                Vector2 hovering = level.getVertexNear(intersection.x, intersection.z, 0.25f);
+                Vector2 hovering = level.getVertexNear(intersection.x, intersection.z, 0.5f);
                 if(hovering != null) {
                     pickedGridPoint.x = hovering.x;
                     pickedGridPoint.z = hovering.y;
@@ -223,7 +223,7 @@ public class DoomTestEditor extends ApplicationAdapter {
                         wasDragging = false;
                     }
 
-                    hoveredPoint = level.getVertexNear(intersection.x, intersection.z, 0.25f);
+                    hoveredPoint = level.getVertexNear(intersection.x, intersection.z, 0.5f);
                     if(hoveredPoint != null) hoveredLine = null;
                 }
 
@@ -522,6 +522,9 @@ public class DoomTestEditor extends ApplicationAdapter {
                 }
             }
 
+            camera.viewportHeight = Gdx.graphics.getHeight();
+            camera.viewportWidth = Gdx.graphics.getWidth();
+
             Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
             Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
 
@@ -553,7 +556,7 @@ public class DoomTestEditor extends ApplicationAdapter {
                     if(point == null) point = hoveredPoint;
 
                     for(Sector s : editor.getAllSectorsWithVertex(level.sectors, point, new Array<Sector>())) {
-                        float pointSize = 0.2f;
+                        float pointSize = 0.4f;
                         lineRenderer.begin(ShapeRenderer.ShapeType.Filled);
                         lineRenderer.setColor(Color.RED);
                         lineRenderer.box(point.x - pointSize / 2, s.floorHeight, point.y + pointSize / 2, pointSize, pointSize / 3, pointSize);
@@ -635,7 +638,7 @@ public class DoomTestEditor extends ApplicationAdapter {
         lineRenderer.setColor(color);
         Array<Vector2> points = s.getPoints();
 
-        float pointSize = 0.2f;
+        float pointSize = 0.4f;
         if(points.size > 0) {
             for(Vector2 point : points) {
                 lineRenderer.box(point.x - pointSize / 2, s.getFloorHeight(), point.y + pointSize / 2, pointSize, pointSize / 3, pointSize);
@@ -650,7 +653,7 @@ public class DoomTestEditor extends ApplicationAdapter {
     }
 
     public void renderNextPoint() {
-        float pointSize = 0.2f;
+        float pointSize = 0.4f;
         lineRenderer.begin(ShapeRenderer.ShapeType.Filled);
         lineRenderer.setColor(Color.YELLOW);
         lineRenderer.box(pickedGridPoint.x - pointSize / 2, pickedGridPoint.y, pickedGridPoint.z + pointSize / 2, pointSize, pointSize / 3, pointSize);
