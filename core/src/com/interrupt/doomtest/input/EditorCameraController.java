@@ -88,11 +88,11 @@ public class EditorCameraController extends GestureDetector {
     }
 
     private float getTranslateSpeed() {
-        return 20f;
+        return 80f;
     }
 
     private float getRotateSpeed() {
-        return 70f;
+        return 80f;
     }
 
     public void update () {

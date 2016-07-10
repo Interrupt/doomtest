@@ -77,18 +77,20 @@ public class DoomTestEditor extends ApplicationAdapter {
 
     Array<Material> selectedMaterials = new Array<Material>();
 
+    public static float GRID_SNAP = 2f;
+
 	@Override
 	public void create () {
         camera = new PerspectiveCamera(67, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         camera.up.set(Vector3.Y);
-        camera.position.set(0f, 20f, -5f);
+        camera.position.set(0f, 80f, -5f);
 
         Vector3 tmpV1 = new Vector3(camera.direction).crs(camera.up).nor();
         camera.direction.rotate(tmpV1, -70f);
 
         //camera.lookAt(0,0,-5f);
         camera.near = 0.1f;
-        camera.far = 300f;
+        camera.far = 900f;
         camera.update();
 
         // A camera that can be driven around
@@ -123,7 +125,7 @@ public class DoomTestEditor extends ApplicationAdapter {
 
             if(lastIntersection == null) lastIntersection = new Vector3(editPlaneIntersection);
 
-            intersection.y = ((int)(intersection.y * 8f) / 8f);
+            intersection.y = ((int)(intersection.y * GRID_SNAP) / GRID_SNAP);
 
             // round grid point to the grid
             pickedGridPoint.set((int) intersection.x, intersection.y, (int) intersection.z);
@@ -148,7 +150,7 @@ public class DoomTestEditor extends ApplicationAdapter {
                     if(Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)) mod *= -1f;
 
                     Sector picked = hoveredSector;
-                    picked.floorHeight += mod;
+                    picked.floorHeight += mod * GRID_SNAP;
                     refreshRenderer();
                 }
 
@@ -157,7 +159,7 @@ public class DoomTestEditor extends ApplicationAdapter {
                     if(Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)) mod *= -1f;
 
                     Sector picked = hoveredSector;
-                    picked.ceilHeight += mod;
+                    picked.ceilHeight += mod * GRID_SNAP;
                     refreshRenderer();
                 }
 
@@ -269,12 +271,12 @@ public class DoomTestEditor extends ApplicationAdapter {
                         }
                         else {
                             if(Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)) {
-                                pickedSector.ceilHeight = startHeightModeCeilHeight - ((Gdx.input.getY() - lastMousePoint.y) / 60f);
-                                pickedSector.ceilHeight = (int) (pickedSector.ceilHeight * 8f) / 8f;
+                                pickedSector.ceilHeight = startHeightModeCeilHeight - ((Gdx.input.getY() - lastMousePoint.y) / 60f) * GRID_SNAP;
+                                pickedSector.ceilHeight = (int) (pickedSector.ceilHeight * GRID_SNAP) / GRID_SNAP;
                             }
                             else {
-                                pickedSector.floorHeight = startHeightModeFloorHeight - ((Gdx.input.getY() - lastMousePoint.y) / 60f);
-                                pickedSector.floorHeight = (int) (pickedSector.floorHeight * 8f) / 8f;
+                                pickedSector.floorHeight = startHeightModeFloorHeight - ((Gdx.input.getY() - lastMousePoint.y) / 60f) * GRID_SNAP;
+                                pickedSector.floorHeight = (int) (pickedSector.floorHeight * GRID_SNAP) / GRID_SNAP;
                             }
                         }
 
@@ -657,17 +659,21 @@ public class DoomTestEditor extends ApplicationAdapter {
 
     public void renderGrid() {
 
-        float size = 80;
+        float size = 160;
         float half = size / 2;
+        float scale = 4f;
 
         lineRenderer.setColor(wireframeColor);
 
+        float xOffset = 0; //(int)camera.position.x;
+        float yOffset = 0; //(int)camera.position.y;
+
         lineRenderer.begin(ShapeRenderer.ShapeType.Line);
         for(int i = 0; i < size; i++) {
-            lineRenderer.line(-half + (int)camera.position.x, 0, i - half + (int)camera.position.z, half + (int)camera.position.x, 0, i - half + (int)camera.position.z);
+            lineRenderer.line((-half * scale) + xOffset, 0, ((i - half) * scale + yOffset), (half * scale + xOffset), 0, ((i - half) * scale + yOffset));
         }
         for(int i = 0; i < size; i++) {
-            lineRenderer.line(i - half + (int)camera.position.x, 0, -half + (int)camera.position.z, i - half + (int)camera.position.x, 0, half + (int)camera.position.z);
+            lineRenderer.line(((i - half) * scale + xOffset), 0, (-half * scale + yOffset), ((i - half) * scale + xOffset), 0, (half * scale + yOffset));
         }
         lineRenderer.end();
     }

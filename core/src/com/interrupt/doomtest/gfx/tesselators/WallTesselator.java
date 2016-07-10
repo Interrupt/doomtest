@@ -18,6 +18,8 @@ import com.interrupt.doomtest.levels.Sector;
 
 public class WallTesselator {
 
+    protected static float UV_SCALING = 0.125f;
+
     public static Model tesselate(Array<Line> walls) {
 
         Array<Line> linesToDraw = getVisibleLines(walls);
@@ -113,7 +115,7 @@ public class WallTesselator {
             sectorHeight = line.right.getFloorHeight() - line.left.getFloorHeight();
         }
 
-        sectorHeight = Math.abs(sectorHeight) * -0.5f;
+        sectorHeight = Math.abs(sectorHeight) * -UV_SCALING;
 
         Array<Vector2> wallUVs = new Array<Vector2>();
         float startV = 0;
@@ -127,8 +129,8 @@ public class WallTesselator {
 
             wallUVs.add(new Vector2(0, startV));
             wallUVs.add(new Vector2(0, endV));
-            wallUVs.add(new Vector2(lineLength * 0.5f, startV));
-            wallUVs.add(new Vector2(lineLength * 0.5f, endV));
+            wallUVs.add(new Vector2(lineLength * UV_SCALING, startV));
+            wallUVs.add(new Vector2(lineLength * UV_SCALING, endV));
         }
 
         return wallUVs;
@@ -144,7 +146,7 @@ public class WallTesselator {
             sectorHeight = line.right.getFloorHeight() - line.left.getFloorHeight();
         }
 
-        sectorHeight = Math.abs(sectorHeight) * -0.5f;
+        sectorHeight = Math.abs(sectorHeight) * -UV_SCALING;
 
         Array<Vector2> wallUVs = new Array<Vector2>();
 
@@ -153,20 +155,20 @@ public class WallTesselator {
 
             if(!line.solid && line.right != null) {
                 if(line.right.getCeilingHeight() < line.left.getCeilingHeight()) {
-                    offset = (line.right.getFloorHeight() - line.left.getFloorHeight()) * -0.5f;
+                    offset = (line.right.getFloorHeight() - line.left.getFloorHeight()) * -UV_SCALING;
                 }
                 else {
-                    offset = (line.left.getFloorHeight() - line.right.getFloorHeight()) * -0.5f;
+                    offset = (line.left.getFloorHeight() - line.right.getFloorHeight()) * -UV_SCALING;
                 }
                 if(line.right.getCeilingHeight() < line.left.getCeilingHeight()) {
-                    offset += (line.right.getCeilingHeight() - line.right.getFloorHeight()) * -0.5f;
+                    offset += (line.right.getCeilingHeight() - line.right.getFloorHeight()) * -UV_SCALING;
                 }
                 else {
-                    offset += (line.left.getCeilingHeight() - line.left.getFloorHeight()) * -0.5f;
+                    offset += (line.left.getCeilingHeight() - line.left.getFloorHeight()) * -UV_SCALING;
                 }
             }
 
-            sectorHeight = Math.abs(line.right.getCeilingHeight() - line.left.getCeilingHeight()) * -0.5f;
+            sectorHeight = Math.abs(line.right.getCeilingHeight() - line.left.getCeilingHeight()) * -UV_SCALING;
             float startV = 0 + offset;
             float endV = sectorHeight + offset;
 
@@ -177,8 +179,8 @@ public class WallTesselator {
 
             wallUVs.add(new Vector2(0, startV));
             wallUVs.add(new Vector2(0, endV));
-            wallUVs.add(new Vector2(lineLength * 0.5f, startV));
-            wallUVs.add(new Vector2(lineLength * 0.5f, endV));
+            wallUVs.add(new Vector2(lineLength * UV_SCALING, startV));
+            wallUVs.add(new Vector2(lineLength * UV_SCALING, endV));
         }
 
         return wallUVs;

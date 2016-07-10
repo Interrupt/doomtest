@@ -17,6 +17,7 @@ public class TessCallback extends GLUtessellatorCallbackAdapter {
     public Array<VertexData> data = new Array<VertexData>();
     public ModelBuilder modelBuilder = new ModelBuilder();
     Material material = new Material(ColorAttribute.createDiffuse(Color.WHITE));
+    static float UV_SCALING = 0.125f;
 
     int currentType;
     int parts = 0;
@@ -88,8 +89,8 @@ public class TessCallback extends GLUtessellatorCallbackAdapter {
             vertices[i * 5 + 2] = (float)vertex.data[2];
 
             // UV
-            vertices[i * 5 + 3] = (float)vertex.data[0] * 0.5f;
-            vertices[i * 5 + 4] = (float)vertex.data[2] * 0.5f;
+            vertices[i * 5 + 3] = (float)vertex.data[0] * UV_SCALING;
+            vertices[i * 5 + 4] = (float)vertex.data[2] * UV_SCALING;
         }
         return vertices;
     }

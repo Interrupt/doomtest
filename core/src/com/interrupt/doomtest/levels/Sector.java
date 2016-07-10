@@ -19,7 +19,7 @@ public class Sector {
     public Array<Sector> subsectors = new Array<Sector>();
 
     public float floorHeight = 0;
-    public float ceilHeight = 2;
+    public float ceilHeight = 8;
 
     public boolean isSolid = false;
 
