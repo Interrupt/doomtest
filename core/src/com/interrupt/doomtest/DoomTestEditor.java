@@ -255,6 +255,8 @@ public class DoomTestEditor extends ApplicationAdapter {
                         refreshRenderer();
                     }
                     else if(pickedPoint != null) {
+                        pickedPoint.x = (int)(pickedPoint.x * GRID_SNAP) / GRID_SNAP;
+                        pickedPoint.y = (int)(pickedPoint.y * GRID_SNAP) / GRID_SNAP;
                         pickedPoint.add((int)editPlaneIntersection.x - (int)lastIntersection.x, (int)editPlaneIntersection.z - (int)lastIntersection.z);
                         refreshRenderer();
                     }
