@@ -3,24 +3,38 @@ package com.interrupt.doomtest;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.badlogic.gdx.graphics.Camera;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.PerspectiveCamera;
+import com.badlogic.gdx.InputMultiplexer;
+import com.badlogic.gdx.graphics.*;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
+import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.Plane;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.collision.Ray;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Image;
+import com.badlogic.gdx.scenes.scene2d.ui.Skin;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
+import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.Scaling;
+import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.interrupt.doomtest.collisions.WorldIntersection;
 import com.interrupt.doomtest.collisions.WorldIntersector;
+import com.interrupt.doomtest.editor.ui.TextureRegionPicker;
+import com.interrupt.doomtest.gfx.Art;
 import com.interrupt.doomtest.gfx.renderer.RendererFrontend;
 import com.interrupt.doomtest.input.EditorCameraController;
+import com.interrupt.doomtest.input.EditorInput;
 import com.interrupt.doomtest.levels.Level;
 import com.interrupt.doomtest.levels.Line;
 import com.interrupt.doomtest.levels.Sector;
@@ -32,6 +46,9 @@ public class DoomTestEditor extends ApplicationAdapter {
     EditorCameraController camController;
     ShapeRenderer lineRenderer;
     RendererFrontend renderer;
+
+    public Stage hudStage;
+    public Skin hudSkin;
 
     public Level level = new Level();
     public Editor editor = new Editor(level);
@@ -88,17 +105,44 @@ public class DoomTestEditor extends ApplicationAdapter {
         Vector3 tmpV1 = new Vector3(camera.direction).crs(camera.up).nor();
         camera.direction.rotate(tmpV1, -70f);
 
-        //camera.lookAt(0,0,-5f);
+        // Set initial camera position
         camera.near = 0.1f;
         camera.far = 900f;
         camera.update();
 
         // A camera that can be driven around
         camController = new EditorCameraController(camera);
-        Gdx.input.setInputProcessor(camController);
 
+        // Shape renderers
         lineRenderer = new ShapeRenderer();
         renderer = new RendererFrontend();
+
+        // Setup HUD
+        OrthographicCamera hudCamera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        hudStage = new Stage(new ScreenViewport(hudCamera));
+        hudSkin = new Skin(Gdx.files.local("ui/HoloSkin/Holo-dark-ldpi.json"),
+                new TextureAtlas(Gdx.files.local("ui/HoloSkin/Holo-dark-ldpi.atlas")));
+
+        // Setup Input
+        EditorInput editorInput = new EditorInput() {
+            @Override
+            public boolean touchDown(int screenX, int screenY, int pointer, int btn) {
+                onTouchDown(screenX, screenY, btn);
+                return true;
+            }
+        };
+
+        InputMultiplexer input = new InputMultiplexer();
+        input.addProcessor(hudStage);
+        input.addProcessor(editorInput);
+        input.addProcessor(camController);
+
+        Gdx.input.setInputProcessor(input);
+
+        // Texture picker
+        Array<TextureRegion> textures = loadTexturesFromAtlas("textures/textures.png");
+        textures.add(new TextureRegion(Art.getTexture("textures/wall1.png")));
+        setupHud(textures);
 	}
 
     public void refreshRenderer() {
@@ -179,30 +223,6 @@ public class DoomTestEditor extends ApplicationAdapter {
                     pickedGridPoint.z = hovering.y;
                 }
 
-                // Add a new vertex when clicked
-                if (Gdx.input.justTouched()) {
-
-                    Vector2 next = new Vector2(pickedGridPoint.x, pickedGridPoint.z);
-                    Vector2 existing = editor.getExistingVertex(next);
-
-                    // Start a new sector if not currently editing one
-                    if (current == null) {
-                        editHeight = intersection.y;
-                        editPlane.set(new Vector3(0, editHeight, 0), Vector3.Y);
-
-                        current = new Sector();
-                        current.floorHeight = editHeight;
-                    }
-
-                    // finish the sector automatically if the line loops
-                    if(current.getPoints().size > 0 && next.equals(current.getPoints().first())) {
-                        finishSector();
-                    }
-                    else {
-                        current.addVertex(existing != null ? existing : next);
-                    }
-                }
-
                 // Cancel the current sector
                 if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
                     cancelEditingSector();
@@ -227,28 +247,7 @@ public class DoomTestEditor extends ApplicationAdapter {
                     if(hoveredPoint != null) hoveredLine = null;
                 }
 
-                if(Gdx.input.justTouched() && Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
-                    pickedPoint = null;
-                    pickedSector = null;
-                    pickedLine = null;
-
-                    if(hoveredPoint != null) pickedPoint = hoveredPoint;
-                    else if(hoveredLine != null) pickedLine = hoveredLine;
-                    else if(hoveredSector != null) pickedSector = hoveredSector;
-
-                    setHighlights();
-                    refreshRenderer();
-
-                    lastMousePoint.set(Gdx.input.getX(), Gdx.input.getY());
-                    if(pickedSector != null) {
-                        startHeightModeFloorHeight = pickedSector.floorHeight;
-                        startHeightModeCeilHeight = pickedSector.ceilHeight;
-                    }
-
-                    editPlane.set(new Vector3(0, intersection.y, 0), Vector3.Y);
-                    lastIntersection = null;
-                }
-                else if(Gdx.input.isTouched()) {
+                if(Gdx.input.isTouched()) {
                     if(pickedLine != null) {
                         pickedLine.start.add((int)editPlaneIntersection.x - (int)lastIntersection.x, (int)editPlaneIntersection.z - (int)lastIntersection.z);
                         pickedLine.end.add((int)editPlaneIntersection.x - (int)lastIntersection.x, (int)editPlaneIntersection.z - (int)lastIntersection.z);
@@ -288,13 +287,6 @@ public class DoomTestEditor extends ApplicationAdapter {
                 }
                 else {
                     editPlane.set(Vector3.Zero, Vector3.Y);
-                }
-
-                if(Gdx.input.justTouched() && Gdx.input.isButtonPressed(Input.Buttons.RIGHT)) {
-                    if(pickedSector != null && hoveredSector != null) {
-                        hoveredSector.match(pickedSector);
-                        refreshRenderer();
-                    }
                 }
 
                 // Delete sectors or points
@@ -360,6 +352,60 @@ public class DoomTestEditor extends ApplicationAdapter {
             }
             else {
                 editorMode = EditorModes.SPLIT;
+            }
+        }
+
+        hudStage.act(Gdx.graphics.getDeltaTime());
+    }
+
+    public void onTouchDown(int x, int y, int button) {
+        if(editorMode == EditorModes.SECTOR) {
+            Vector2 next = new Vector2(pickedGridPoint.x, pickedGridPoint.z);
+            Vector2 existing = editor.getExistingVertex(next);
+
+            // Start a new sector if not currently editing one
+            if (current == null) {
+                editHeight = intersection.y;
+                editPlane.set(new Vector3(0, editHeight, 0), Vector3.Y);
+
+                current = new Sector();
+                current.floorHeight = editHeight;
+            }
+
+            // finish the sector automatically if the line loops
+            if (current.getPoints().size > 0 && next.equals(current.getPoints().first())) {
+                finishSector();
+            } else {
+                current.addVertex(existing != null ? existing : next);
+            }
+        }
+        else if(editorMode == EditorModes.POINT) {
+            if(button == Input.Buttons.LEFT) {
+                pickedPoint = null;
+                pickedSector = null;
+                pickedLine = null;
+
+                if(hoveredPoint != null) pickedPoint = hoveredPoint;
+                else if(hoveredLine != null) pickedLine = hoveredLine;
+                else if(hoveredSector != null) pickedSector = hoveredSector;
+
+                setHighlights();
+                refreshRenderer();
+
+                lastMousePoint.set(Gdx.input.getX(), Gdx.input.getY());
+                if(pickedSector != null) {
+                    startHeightModeFloorHeight = pickedSector.floorHeight;
+                    startHeightModeCeilHeight = pickedSector.ceilHeight;
+                }
+
+                editPlane.set(new Vector3(0, intersection.y, 0), Vector3.Y);
+                lastIntersection = null;
+            }
+            else if(button == Input.Buttons.RIGHT) {
+                if(pickedSector != null && hoveredSector != null) {
+                    hoveredSector.match(pickedSector);
+                    refreshRenderer();
+                }
             }
         }
     }
@@ -580,6 +626,8 @@ public class DoomTestEditor extends ApplicationAdapter {
                     lineRenderer.end();
                 }
             }
+
+            hudStage.draw();
         }
         catch(Throwable t) {
             Gdx.app.log("Error", t.getMessage());
@@ -681,5 +729,66 @@ public class DoomTestEditor extends ApplicationAdapter {
             lineRenderer.line(((i - half) * scale + xOffset), 0, (-half * scale + yOffset), ((i - half) * scale + xOffset), 0, (half * scale + yOffset));
         }
         lineRenderer.end();
+    }
+
+    private void setupHud(final Array<TextureRegion> textures) {
+        Image texturePickerButton = new Image(new TextureRegionDrawable(textures.first()));
+        texturePickerButton.setScaling(Scaling.stretch);
+
+        Table wallPickerLayoutTable = new Table();
+        wallPickerLayoutTable.setFillParent(true);
+        wallPickerLayoutTable.align(Align.left | Align.top).pad(20f).padTop(20f);
+
+        wallPickerLayoutTable.add(texturePickerButton).width(50f).height(50f).align(Align.left).padBottom(6f);
+        wallPickerLayoutTable.row();
+
+        texturePickerButton.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                TextureRegionPicker picker = new TextureRegionPicker("Pick Current Texture", hudSkin, textures) {
+                    @Override
+                    public void result(Integer value, TextureRegion region) {
+                        setTexture(region);
+                    }
+                };
+                hudStage.addActor(picker);
+                picker.show(hudStage);
+                event.handle();
+            }
+        });
+
+        hudStage.addActor(wallPickerLayoutTable);
+    }
+
+    public void setTexture(TextureRegion texture) {
+        if(pickedLine != null) {
+            pickedLine.lowerMaterial.set(TextureAttribute.createDiffuse(texture));
+        }
+        else if(pickedSector != null) {
+            pickedSector.floorMaterial.set(TextureAttribute.createDiffuse(texture));
+        }
+        refreshRenderer();
+    }
+
+    public Array<TextureRegion> loadTexturesFromAtlas(String filename) {
+        Pixmap atlas = new Pixmap(Gdx.files.local(filename));
+        int texSize = atlas.getWidth() / 4;
+
+        Array<TextureRegion> textures = new Array<TextureRegion>();
+
+        for(int x = 0; x < atlas.getWidth() / texSize; x++) {
+            for(int y = 0; y < atlas.getHeight() / texSize; y++) {
+                Pixmap repacked = new Pixmap(texSize, texSize, atlas.getFormat());
+                repacked.drawPixmap(atlas, x * texSize, y * texSize, texSize, texSize, 0, 0, texSize, texSize);
+
+                Texture texture = new Texture(repacked);
+                texture.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
+                texture.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+
+                textures.add(new TextureRegion(texture));
+            }
+        }
+
+        return textures;
     }
 }

@@ -25,7 +25,7 @@ public abstract class TextureRegionPicker extends Window {
 
     final Array<TextureRegion> regions;
 
-    public TextureRegionPicker(String title, Skin skin, String selectedAtlas, Array<TextureRegion> regions) {
+    public TextureRegionPicker(String title, Skin skin, Array<TextureRegion> regions) {
         super(title, skin);
 
         this.regions = regions;
