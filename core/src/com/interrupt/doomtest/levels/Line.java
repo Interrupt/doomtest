@@ -89,4 +89,8 @@ public class Line {
         }
         return Plane.PlaneSide.Front;
     }
+
+    public void match(Line other) {
+        lowerMaterial.set(other.lowerMaterial.get(TextureAttribute.Diffuse));
+    }
 }

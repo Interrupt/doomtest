@@ -96,6 +96,9 @@ public class DoomTestEditor extends ApplicationAdapter {
 
     public static float GRID_SNAP = 2f;
 
+    Image texturePickerButton;
+    TextureRegion currentTexture;
+
 	@Override
 	public void create () {
         camera = new PerspectiveCamera(67, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
@@ -142,7 +145,9 @@ public class DoomTestEditor extends ApplicationAdapter {
         // Texture picker
         Array<TextureRegion> textures = loadTexturesFromAtlas("textures/textures.png");
         textures.add(new TextureRegion(Art.getTexture("textures/wall1.png")));
-        setupHud(textures);
+
+        currentTexture = textures.get(textures.size - 1);
+        setupHud(textures, currentTexture);
 	}
 
     public void refreshRenderer() {
@@ -404,6 +409,10 @@ public class DoomTestEditor extends ApplicationAdapter {
             else if(button == Input.Buttons.RIGHT) {
                 if(pickedSector != null && hoveredSector != null) {
                     hoveredSector.match(pickedSector);
+                    refreshRenderer();
+                }
+                else if(pickedLine != null && hoveredLine != null) {
+                    hoveredLine.match(pickedLine);
                     refreshRenderer();
                 }
             }
@@ -731,8 +740,8 @@ public class DoomTestEditor extends ApplicationAdapter {
         lineRenderer.end();
     }
 
-    private void setupHud(final Array<TextureRegion> textures) {
-        Image texturePickerButton = new Image(new TextureRegionDrawable(textures.first()));
+    private void setupHud(final Array<TextureRegion> textures, TextureRegion current) {
+        texturePickerButton = new Image(new TextureRegionDrawable(current));
         texturePickerButton.setScaling(Scaling.stretch);
 
         Table wallPickerLayoutTable = new Table();
@@ -749,6 +758,7 @@ public class DoomTestEditor extends ApplicationAdapter {
                     @Override
                     public void result(Integer value, TextureRegion region) {
                         setTexture(region);
+                        texturePickerButton.setDrawable(new TextureRegionDrawable(region));
                     }
                 };
                 hudStage.addActor(picker);
@@ -761,6 +771,8 @@ public class DoomTestEditor extends ApplicationAdapter {
     }
 
     public void setTexture(TextureRegion texture) {
+        currentTexture = texture;
+
         if(pickedLine != null) {
             pickedLine.lowerMaterial.set(TextureAttribute.createDiffuse(texture));
         }
