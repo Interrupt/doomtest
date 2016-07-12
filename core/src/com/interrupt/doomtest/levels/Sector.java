@@ -229,5 +229,6 @@ public class Sector {
         ceilHeight = other.ceilHeight;
 
         floorMaterial.set((other.floorMaterial.get(TextureAttribute.Diffuse)));
+        ceilingMaterial.set((other.ceilingMaterial.get(TextureAttribute.Diffuse)));
     }
 }

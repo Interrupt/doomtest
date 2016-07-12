@@ -466,7 +466,8 @@ public class DoomTestEditor extends ApplicationAdapter {
 
             if (parent != null) {
                 parent.addSubSector(current);
-                current.ceilHeight = parent.ceilHeight;
+                current.match(parent);
+                if(editHeight != null) current.floorHeight = editHeight;
 
                 // parent's sectors might now be contained by this new sector
                 editor.refreshSectorParents(current, parent);
@@ -480,7 +481,7 @@ public class DoomTestEditor extends ApplicationAdapter {
 
                 if (i > 0) {
                     Vector2 prev = points.get(i - 1);
-                    editor.addLine(current, prev, p);
+                    editor.addLine(current, prev, p, currentTexture);
                 }
             }
 
@@ -488,11 +489,16 @@ public class DoomTestEditor extends ApplicationAdapter {
             Vector2 startPoint = points.first();
             Vector2 lastPoint = points.get(points.size - 1);
             if (!lastPoint.equals(startPoint)) {
-                editor.addLine(current, lastPoint, startPoint);
+                editor.addLine(current, lastPoint, startPoint, currentTexture);
             }
 
-            if (parent == null)
+            if (parent == null) {
                 level.sectors.add(current);
+
+                // set texture
+                current.floorMaterial.set(TextureAttribute.createDiffuse(currentTexture));
+                current.ceilingMaterial.set(TextureAttribute.createDiffuse(currentTexture));
+            }
 
 
             // solid parents mean line solidity might change now
