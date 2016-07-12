@@ -129,8 +129,8 @@ public class WallTesselator {
 
             wallUVs.add(new Vector2(0, startV));
             wallUVs.add(new Vector2(0, endV));
-            wallUVs.add(new Vector2(lineLength * UV_SCALING, startV));
-            wallUVs.add(new Vector2(lineLength * UV_SCALING, endV));
+            wallUVs.add(new Vector2(-lineLength * UV_SCALING, startV));
+            wallUVs.add(new Vector2(-lineLength * UV_SCALING, endV));
         }
 
         return wallUVs;
@@ -179,8 +179,8 @@ public class WallTesselator {
 
             wallUVs.add(new Vector2(0, startV));
             wallUVs.add(new Vector2(0, endV));
-            wallUVs.add(new Vector2(lineLength * UV_SCALING, startV));
-            wallUVs.add(new Vector2(lineLength * UV_SCALING, endV));
+            wallUVs.add(new Vector2(-lineLength * UV_SCALING, startV));
+            wallUVs.add(new Vector2(-lineLength * UV_SCALING, endV));
         }
 
         return wallUVs;
