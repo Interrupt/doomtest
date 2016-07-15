@@ -96,6 +96,9 @@ public class DoomTestEditor extends ApplicationAdapter {
 
     public static float GRID_SNAP = 2f;
 
+    Image texturePickerButton;
+    TextureRegion currentTexture;
+
 	@Override
 	public void create () {
         camera = new PerspectiveCamera(67, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
@@ -142,7 +145,9 @@ public class DoomTestEditor extends ApplicationAdapter {
         // Texture picker
         Array<TextureRegion> textures = loadTexturesFromAtlas("textures/textures.png");
         textures.add(new TextureRegion(Art.getTexture("textures/wall1.png")));
-        setupHud(textures);
+
+        currentTexture = textures.get(textures.size - 1);
+        setupHud(textures, currentTexture);
 	}
 
     public void refreshRenderer() {
@@ -406,6 +411,10 @@ public class DoomTestEditor extends ApplicationAdapter {
                     hoveredSector.match(pickedSector);
                     refreshRenderer();
                 }
+                else if(pickedLine != null && hoveredLine != null) {
+                    hoveredLine.match(pickedLine);
+                    refreshRenderer();
+                }
             }
         }
     }
@@ -457,7 +466,8 @@ public class DoomTestEditor extends ApplicationAdapter {
 
             if (parent != null) {
                 parent.addSubSector(current);
-                current.ceilHeight = parent.ceilHeight;
+                current.match(parent);
+                if(editHeight != null) current.floorHeight = editHeight;
 
                 // parent's sectors might now be contained by this new sector
                 editor.refreshSectorParents(current, parent);
@@ -471,7 +481,7 @@ public class DoomTestEditor extends ApplicationAdapter {
 
                 if (i > 0) {
                     Vector2 prev = points.get(i - 1);
-                    editor.addLine(current, prev, p);
+                    editor.addLine(current, prev, p, currentTexture);
                 }
             }
 
@@ -479,11 +489,16 @@ public class DoomTestEditor extends ApplicationAdapter {
             Vector2 startPoint = points.first();
             Vector2 lastPoint = points.get(points.size - 1);
             if (!lastPoint.equals(startPoint)) {
-                editor.addLine(current, lastPoint, startPoint);
+                editor.addLine(current, lastPoint, startPoint, currentTexture);
             }
 
-            if (parent == null)
+            if (parent == null) {
                 level.sectors.add(current);
+
+                // set texture
+                current.floorMaterial.set(TextureAttribute.createDiffuse(currentTexture));
+                current.ceilingMaterial.set(TextureAttribute.createDiffuse(currentTexture));
+            }
 
 
             // solid parents mean line solidity might change now
@@ -731,8 +746,8 @@ public class DoomTestEditor extends ApplicationAdapter {
         lineRenderer.end();
     }
 
-    private void setupHud(final Array<TextureRegion> textures) {
-        Image texturePickerButton = new Image(new TextureRegionDrawable(textures.first()));
+    private void setupHud(final Array<TextureRegion> textures, TextureRegion current) {
+        texturePickerButton = new Image(new TextureRegionDrawable(current));
         texturePickerButton.setScaling(Scaling.stretch);
 
         Table wallPickerLayoutTable = new Table();
@@ -749,6 +764,7 @@ public class DoomTestEditor extends ApplicationAdapter {
                     @Override
                     public void result(Integer value, TextureRegion region) {
                         setTexture(region);
+                        texturePickerButton.setDrawable(new TextureRegionDrawable(region));
                     }
                 };
                 hudStage.addActor(picker);
@@ -761,6 +777,8 @@ public class DoomTestEditor extends ApplicationAdapter {
     }
 
     public void setTexture(TextureRegion texture) {
+        currentTexture = texture;
+
         if(pickedLine != null) {
             pickedLine.lowerMaterial.set(TextureAttribute.createDiffuse(texture));
         }

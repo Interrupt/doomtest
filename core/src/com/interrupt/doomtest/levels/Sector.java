@@ -13,6 +13,8 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.interrupt.doomtest.gfx.Art;
 
+import javax.xml.soap.Text;
+
 public class Sector {
     public Array<Vector2> points = new Array<Vector2>();
     public Sector parent = null;
@@ -225,5 +227,8 @@ public class Sector {
     public void match(Sector other) {
         floorHeight = other.floorHeight;
         ceilHeight = other.ceilHeight;
+
+        floorMaterial.set((other.floorMaterial.get(TextureAttribute.Diffuse)));
+        ceilingMaterial.set((other.ceilingMaterial.get(TextureAttribute.Diffuse)));
     }
 }
