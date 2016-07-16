@@ -16,10 +16,7 @@ allprojects {
     ext {
         appName = "doom-engine-test"
         gdxVersion = '1.9.3'
-        roboVMVersion = '2.1.0'
-        box2DLightsVersion = '1.4'
-        ashleyVersion = '1.7.0'
-        aiVersion = '1.8.0'
+        lwjglVersion = '2.9.2'
     }
 
     repositories {
@@ -47,6 +44,7 @@ project(":core") {
 
     dependencies {
         compile "com.badlogicgames.gdx:gdx:$gdxVersion"
+        compile "org.lwjgl.lwjgl:lwjgl_util:$lwjglVersion"
     }
 }
 

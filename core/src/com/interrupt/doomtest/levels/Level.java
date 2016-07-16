@@ -8,6 +8,8 @@ public class Level {
     public Array<Line> lines = new Array<Line>();
     public Array<Vector2> vertices = new Array<Vector2>();
 
+    public Level() { }
+
     public Vector2 getVertexNear(float x, float y, float distance) {
         for(Vector2 v : vertices) {
             float d = v.dst(x, y);
