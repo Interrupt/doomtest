@@ -17,8 +17,12 @@ public class Art {
         texture.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
         texture.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
 
-        loadedTextures.put(filename, texture);
+        cacheTexture(filename, texture);
 
         return texture;
+    }
+
+    public static void cacheTexture(String key, Texture texture) {
+        loadedTextures.put(key, texture);
     }
 }

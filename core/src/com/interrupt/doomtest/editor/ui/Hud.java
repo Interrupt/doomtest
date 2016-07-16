@@ -5,8 +5,6 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
@@ -25,6 +23,7 @@ import com.interrupt.doomtest.DoomLikeEditor;
 import com.interrupt.doomtest.editor.ui.menu.MenuItem;
 import com.interrupt.doomtest.editor.ui.menu.Scene2dMenuBar;
 import com.interrupt.doomtest.levels.Level;
+import com.interrupt.doomtest.levels.Surface;
 
 import javax.swing.*;
 import java.awt.*;
@@ -42,7 +41,7 @@ public class Hud {
                 new TextureAtlas(Gdx.files.local("ui/HoloSkin/Holo-dark-ldpi.atlas")));
     }
 
-    public static Stage create(final Array<TextureRegion> textures, TextureRegion current, final DoomLikeEditor doomLikeEditor) {
+    public static Stage create(final Array<Surface> textures, Surface current, final DoomLikeEditor doomLikeEditor) {
 
         editor = doomLikeEditor;
 
@@ -60,7 +59,7 @@ public class Hud {
                 .addItem(new MenuItem("Open", hudSkin, openAction)));
         menuBar.pack();
 
-        final Image texturePickerButton = new Image(new TextureRegionDrawable(current));
+        final Image texturePickerButton = new Image(new TextureRegionDrawable(current.getTextureRegion()));
         texturePickerButton.setScaling(Scaling.stretch);
 
         Table wallPickerLayoutTable = new Table();
@@ -77,9 +76,9 @@ public class Hud {
             public void clicked(InputEvent event, float x, float y) {
                 TextureRegionPicker picker = new TextureRegionPicker("Pick Current Texture", hudSkin, textures) {
                     @Override
-                    public void result(Integer value, TextureRegion region) {
+                    public void result(Integer value, Surface region) {
                         setTexture(region, editor);
-                        texturePickerButton.setDrawable(new TextureRegionDrawable(region));
+                        texturePickerButton.setDrawable(new TextureRegionDrawable(region.getTextureRegion()));
                     }
                 };
                 stage.addActor(picker);
@@ -105,13 +104,13 @@ public class Hud {
         return stage;
     }
 
-    public static void setTexture(TextureRegion texture, DoomLikeEditor editor) {
+    public static void setTexture(Surface texture, DoomLikeEditor editor) {
         editor.currentTexture = texture;
 
         if (editor.pickedLine != null) {
-            editor.pickedLine.lowerMaterial.set(TextureAttribute.createDiffuse(texture));
+            editor.pickedLine.lowerMaterial.match(texture);
         } else if (editor.pickedSector != null) {
-            editor.pickedSector.floorMaterial.set(TextureAttribute.createDiffuse(texture));
+            editor.pickedSector.floorMaterial.match(texture);
         }
         editor.refreshRenderer();
     }
@@ -161,7 +160,7 @@ public class Hud {
             if (dir != null && file != null && file.trim().length() != 0) {
                 currentFileName = file;
                 currentDirectory = dir;
-                editor.saveLevel(new FileHandle(dir + file));
+                editor.saveLevel(Gdx.files.absolute((dir + file)));
             }
 
             frame.dispose();
@@ -171,8 +170,7 @@ public class Hud {
     private static ActionListener newAction = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
-            editor.level = new Level();
-            editor.refreshRenderer();
+            editor.newLevel();
         }
     };
 
@@ -200,7 +198,7 @@ public class Hud {
 
             if (dialog.getFile() != null) {
                 currentFileName = dialog.getFile();
-                currentDirectory = dialog.getDirectory();
+                currentDirectory = "";
             }
 
             final String file = dialog.getFile();
@@ -211,8 +209,6 @@ public class Hud {
             if (level.exists()) {
                 currentFileName = level.path();
                 editor.openLevel(Gdx.files.absolute(dir + file));
-                editor.refreshRenderer();
-
                 frame.dispose();
             }
         }
