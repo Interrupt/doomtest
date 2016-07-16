@@ -6,11 +6,9 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.*;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
-import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.Plane;
@@ -30,6 +28,7 @@ import com.interrupt.doomtest.input.EditorInput;
 import com.interrupt.doomtest.levels.Level;
 import com.interrupt.doomtest.levels.Line;
 import com.interrupt.doomtest.levels.Sector;
+import com.interrupt.doomtest.levels.Surface;
 import com.interrupt.doomtest.levels.editor.Editor;
 
 public class DoomLikeEditor extends ApplicationAdapter {
@@ -85,7 +84,7 @@ public class DoomLikeEditor extends ApplicationAdapter {
 
     public static float GRID_SNAP = 2f;
 
-    public TextureRegion currentTexture;
+    public Surface currentTexture;
     public Stage hudStage;
 
 	@Override
@@ -113,8 +112,8 @@ public class DoomLikeEditor extends ApplicationAdapter {
         OrthographicCamera hudCamera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
         // Load textures
-        Array<TextureRegion> textures = loadTexturesFromAtlas("textures/textures.png");
-        textures.add(new TextureRegion(Art.getTexture("textures/wall1.png")));
+        Array<Surface> textures = loadTexturesFromAtlas("textures/textures.png");
+        textures.add(new Surface("textures/wall1.png"));
 
         // Setup the menu / HUD
         hudStage = Hud.create(textures, textures.get(textures.size - 1), this);
@@ -379,7 +378,6 @@ public class DoomLikeEditor extends ApplicationAdapter {
                 else if(hoveredLine != null) pickedLine = hoveredLine;
                 else if(hoveredSector != null) pickedSector = hoveredSector;
 
-                setHighlights();
                 refreshRenderer();
 
                 lastMousePoint.set(Gdx.input.getX(), Gdx.input.getY());
@@ -481,8 +479,8 @@ public class DoomLikeEditor extends ApplicationAdapter {
                 level.sectors.add(current);
 
                 // set texture
-                current.floorMaterial.set(TextureAttribute.createDiffuse(currentTexture));
-                current.ceilingMaterial.set(TextureAttribute.createDiffuse(currentTexture));
+                current.floorMaterial.match(currentTexture);
+                current.ceilingMaterial.match(currentTexture);
             }
 
 
@@ -500,7 +498,7 @@ public class DoomLikeEditor extends ApplicationAdapter {
         editPlane.set(Vector3.Zero, Vector3.Y);
     }
 
-    public void setHighlights() {
+    /*public void setHighlights() {
         for(Sector s : level.sectors) {
             resetSectorHighlights(s);
         }
@@ -525,7 +523,7 @@ public class DoomLikeEditor extends ApplicationAdapter {
 
     public void resetWallHighlights(Line line) {
         line.lowerMaterial.set(ColorAttribute.createDiffuse(Color.WHITE));
-    }
+    }*/
 
 	@Override
 	public void render () {
@@ -731,11 +729,15 @@ public class DoomLikeEditor extends ApplicationAdapter {
         lineRenderer.end();
     }
 
-    public Array<TextureRegion> loadTexturesFromAtlas(String filename) {
+    public String getTextureAtlasKey(String filename, int x, int y) {
+        return filename + "_" + x + "_" + y;
+    }
+
+    public Array<Surface> loadTexturesFromAtlas(String filename) {
         Pixmap atlas = new Pixmap(Gdx.files.local(filename));
         int texSize = atlas.getWidth() / 4;
 
-        Array<TextureRegion> textures = new Array<TextureRegion>();
+        Array<Surface> textures = new Array<Surface>();
 
         for(int x = 0; x < atlas.getWidth() / texSize; x++) {
             for(int y = 0; y < atlas.getHeight() / texSize; y++) {
@@ -746,7 +748,12 @@ public class DoomLikeEditor extends ApplicationAdapter {
                 texture.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
                 texture.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
 
-                textures.add(new TextureRegion(texture));
+                String atlasKey = getTextureAtlasKey(filename, x, y);
+                Surface surface = new Surface(atlasKey);
+
+                Art.cacheTexture(atlasKey, texture);
+
+                textures.add(surface);
             }
         }
 

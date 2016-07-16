@@ -34,9 +34,8 @@ public class TessCallback extends GLUtessellatorCallbackAdapter {
 
     public Array<MeshPiece> meshPieces = new Array<MeshPiece>();
 
-    public TessCallback(Material material) {
+    public TessCallback() {
         modelBuilder.begin();
-        this.material = material;
     }
 
     public void begin(int type) {

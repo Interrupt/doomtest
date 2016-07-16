@@ -196,10 +196,11 @@ public class WallTesselator {
         for(int i = 0; i < walls.size; i++) {
 
             Line wall = walls.get(i);
+            Material lowerMaterial = wall.lowerMaterial.createMaterial(wall.hashCode() + "_lower");
 
             Array<Vector3> lowerWallVerts = getLowerWallVerts(wall);
             if(lowerWallVerts.size > 0) {
-                FloatArray vertices = vertexData.getVerticesByMaterial(wall.lowerMaterial);
+                FloatArray vertices = vertexData.getVerticesByMaterial(lowerMaterial);
                 Array<Vector2> uvs = getLowerWallUVs(wall);
                 int uvi = 0;
 
@@ -218,7 +219,7 @@ public class WallTesselator {
 
             Array<Vector3> upperWallVerts = getUpperWallVerts(wall);
             if(upperWallVerts.size > 0) {
-                FloatArray vertices = vertexData.getVerticesByMaterial(wall.lowerMaterial);
+                FloatArray vertices = vertexData.getVerticesByMaterial(lowerMaterial);
                 Array<Vector2> uvs = getUpperWallUVs(wall);
                 int uvi = 0;
 

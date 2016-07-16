@@ -1,17 +1,15 @@
 package com.interrupt.doomtest.levels.editor;
 
-import com.badlogic.gdx.graphics.Camera;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.Plane;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.math.collision.Ray;
 import com.badlogic.gdx.utils.Array;
 import com.interrupt.doomtest.levels.Level;
 import com.interrupt.doomtest.levels.Line;
 import com.interrupt.doomtest.levels.Sector;
+import com.interrupt.doomtest.levels.Surface;
 
 public class Editor {
     Level level;
@@ -215,7 +213,7 @@ public class Editor {
         if(existing == null) level.vertices.add(vertex);
     }
 
-    public void addLine(Sector current, Vector2 start, Vector2 end, TextureRegion texture) {
+    public void addLine(Sector current, Vector2 start, Vector2 end, Surface texture) {
 
         // don't duplicate verts
         Vector2 existingStart = getExistingVertex(start);
@@ -234,7 +232,7 @@ public class Editor {
 
         if(existing == null) {
             level.lines.add(line);
-            line.lowerMaterial.set(TextureAttribute.createDiffuse(texture));
+            line.lowerMaterial.match(texture);
         }
         else {
             if(existing.left == current.parent) {

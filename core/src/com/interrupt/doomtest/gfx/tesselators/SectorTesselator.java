@@ -1,11 +1,16 @@
 package com.interrupt.doomtest.gfx.tesselators;
 
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
+import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
+import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
+import com.interrupt.doomtest.gfx.Art;
 import com.interrupt.doomtest.levels.Sector;
 import org.lwjgl.util.glu.GLUtessellator;
 
@@ -18,7 +23,7 @@ public class SectorTesselator {
 
     public static Array<ModelInstance> tesselate(Sector sector) {
 
-        TessCallback callback = new TessCallback(sector.floorMaterial);
+        TessCallback callback = new TessCallback();
 
         tesselator.gluTessCallback(GLU_TESS_VERTEX, callback);
         tesselator.gluTessCallback(GLU_TESS_BEGIN, callback);
@@ -74,8 +79,11 @@ public class SectorTesselator {
         ModelBuilder mb = new ModelBuilder();
         mb.begin();
         int indx = 0;
+
+        Material material = sector.floorMaterial.createMaterial(sector.hashCode() + "_floor");
+
         for(TessCallback.MeshPiece m : meshPieces) {
-            mb.part((indx++) + "", m.mesh, m.drawType, sector.floorMaterial);
+            mb.part((indx++) + "", m.mesh, m.drawType, material);
         }
         return mb.end();
     }
@@ -84,9 +92,11 @@ public class SectorTesselator {
         ModelBuilder mb = new ModelBuilder();
         mb.begin();
         int indx = 0;
-        Matrix4 transform = new Matrix4().translate(0, sector.ceilHeight - sector.floorHeight, 0);
+
+        Material material = sector.ceilingMaterial.createMaterial(sector.hashCode() + "_ceiling");
+
         for(TessCallback.MeshPiece m : meshPieces) {
-            mb.part((indx++) + "", m.mesh, m.drawType, sector.ceilingMaterial);
+            mb.part((indx++) + "", m.mesh, m.drawType, material);
         }
         return mb.end();
     }

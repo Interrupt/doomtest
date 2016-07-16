@@ -10,6 +10,8 @@ import com.badlogic.gdx.scenes.scene2d.utils.FocusListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Scaling;
+import com.interrupt.doomtest.gfx.Art;
+import com.interrupt.doomtest.levels.Surface;
 
 import static com.badlogic.gdx.scenes.scene2d.actions.Actions.sequence;
 
@@ -21,11 +23,10 @@ public abstract class TextureRegionPicker extends Window {
     ScrollPane pane;
     Table buttonLayout;
     Cell paneCell;
-    SelectBox selectBox;
 
-    final Array<TextureRegion> regions;
+    final Array<Surface> regions;
 
-    public TextureRegionPicker(String title, Skin skin, Array<TextureRegion> regions) {
+    public TextureRegionPicker(String title, Skin skin, Array<Surface> regions) {
         super(title, skin);
 
         this.regions = regions;
@@ -77,8 +78,8 @@ public abstract class TextureRegionPicker extends Window {
         buttonLayout.reset();
 
         int num = 0;
-        for(TextureRegion region : regions) {
-            ImageButton button = new ImageButton(new TextureRegionDrawable(region));
+        for(Surface region : regions) {
+            ImageButton button = new ImageButton(new TextureRegionDrawable(region.getTextureRegion()));
             button.getImage().setScaling(Scaling.fill);
             button.getImageCell().width(spriteSize).height(spriteSize);
 
@@ -107,7 +108,7 @@ public abstract class TextureRegionPicker extends Window {
         }
     };
 
-    public void button(Button button, final Integer value, final TextureRegion region) {
+    public void button(Button button, final Integer value, final Surface region) {
         buttonLayout.add(button).pad(4f);
 
         button.addListener(new ClickListener() {
@@ -162,5 +163,5 @@ public abstract class TextureRegionPicker extends Window {
             remove();
     }
 
-    public abstract void result(Integer value, TextureRegion region);
+    public abstract void result(Integer value, Surface region);
 }

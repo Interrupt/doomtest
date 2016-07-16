@@ -18,7 +18,9 @@ public class Line {
     public Sector right = null;
 
     //Material upperMaterial = new Material(this.hashCode() + "_upper", ColorAttribute.createDiffuse(Color.WHITE), TextureAttribute.createDiffuse(Art.getTexture("textures/wall1.png")));
-    public transient Material lowerMaterial = new Material(this.hashCode() + "_lower", ColorAttribute.createDiffuse(Color.WHITE), TextureAttribute.createDiffuse(Art.getTexture("textures/wall1.png")));
+    //public transient Material lowerMaterial = new Material(this.hashCode() + "_lower", ColorAttribute.createDiffuse(Color.WHITE), TextureAttribute.createDiffuse(Art.getTexture("textures/wall1.png")));
+
+    public Surface lowerMaterial = new Surface("textures/wall1.png");
 
     public Line() { }
 
@@ -93,6 +95,6 @@ public class Line {
     }
 
     public void match(Line other) {
-        lowerMaterial.set(other.lowerMaterial.get(TextureAttribute.Diffuse));
+        lowerMaterial = other.lowerMaterial;
     }
 }
