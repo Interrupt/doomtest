@@ -5,7 +5,6 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.graphics.*;
-import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
@@ -17,20 +16,11 @@ import com.badlogic.gdx.math.Plane;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.collision.Ray;
-import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.scenes.scene2d.ui.Image;
-import com.badlogic.gdx.scenes.scene2d.ui.Skin;
-import com.badlogic.gdx.scenes.scene2d.ui.Table;
-import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
-import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
-import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.Scaling;
-import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.interrupt.doomtest.collisions.WorldIntersection;
 import com.interrupt.doomtest.collisions.WorldIntersector;
-import com.interrupt.doomtest.editor.ui.TextureRegionPicker;
+import com.interrupt.doomtest.editor.ui.Hud;
 import com.interrupt.doomtest.gfx.Art;
 import com.interrupt.doomtest.gfx.renderer.RendererFrontend;
 import com.interrupt.doomtest.input.EditorCameraController;
@@ -40,15 +30,12 @@ import com.interrupt.doomtest.levels.Line;
 import com.interrupt.doomtest.levels.Sector;
 import com.interrupt.doomtest.levels.editor.Editor;
 
-public class DoomTestEditor extends ApplicationAdapter {
+public class DoomLikeEditor extends ApplicationAdapter {
 
     Camera camera;
     EditorCameraController camController;
     ShapeRenderer lineRenderer;
     RendererFrontend renderer;
-
-    public Stage hudStage;
-    public Skin hudSkin;
 
     public Level level = new Level();
     public Editor editor = new Editor(level);
@@ -69,13 +56,13 @@ public class DoomTestEditor extends ApplicationAdapter {
     Float editHeight = null;
 
     Sector hoveredSector = null;
-    Sector pickedSector = null;
+    public Sector pickedSector = null;
 
     Vector2 hoveredPoint = null;
     Vector2 pickedPoint = null;
 
     Line hoveredLine = null;
-    Line pickedLine = null;
+    public Line pickedLine = null;
 
     Vector2 lastMousePoint = new Vector2();
     public float startHeightModeFloorHeight = 0;
@@ -96,8 +83,8 @@ public class DoomTestEditor extends ApplicationAdapter {
 
     public static float GRID_SNAP = 2f;
 
-    Image texturePickerButton;
-    TextureRegion currentTexture;
+    public TextureRegion currentTexture;
+    public Stage hudStage;
 
 	@Override
 	public void create () {
@@ -122,11 +109,15 @@ public class DoomTestEditor extends ApplicationAdapter {
 
         // Setup HUD
         OrthographicCamera hudCamera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        hudStage = new Stage(new ScreenViewport(hudCamera));
-        hudSkin = new Skin(Gdx.files.local("ui/HoloSkin/Holo-dark-ldpi.json"),
-                new TextureAtlas(Gdx.files.local("ui/HoloSkin/Holo-dark-ldpi.atlas")));
 
-        // Setup Input
+        // Load textures
+        Array<TextureRegion> textures = loadTexturesFromAtlas("textures/textures.png");
+        textures.add(new TextureRegion(Art.getTexture("textures/wall1.png")));
+
+        // Setup the menu / HUD
+        hudStage = Hud.create(textures, textures.get(textures.size - 1), this);
+
+        // Wire up the input sources
         EditorInput editorInput = new EditorInput() {
             @Override
             public boolean touchDown(int screenX, int screenY, int pointer, int btn) {
@@ -139,15 +130,7 @@ public class DoomTestEditor extends ApplicationAdapter {
         input.addProcessor(hudStage);
         input.addProcessor(editorInput);
         input.addProcessor(camController);
-
         Gdx.input.setInputProcessor(input);
-
-        // Texture picker
-        Array<TextureRegion> textures = loadTexturesFromAtlas("textures/textures.png");
-        textures.add(new TextureRegion(Art.getTexture("textures/wall1.png")));
-
-        currentTexture = textures.get(textures.size - 1);
-        setupHud(textures, currentTexture);
 	}
 
     public void refreshRenderer() {
@@ -744,48 +727,6 @@ public class DoomTestEditor extends ApplicationAdapter {
             lineRenderer.line(((i - half) * scale + xOffset), 0, (-half * scale + yOffset), ((i - half) * scale + xOffset), 0, (half * scale + yOffset));
         }
         lineRenderer.end();
-    }
-
-    private void setupHud(final Array<TextureRegion> textures, TextureRegion current) {
-        texturePickerButton = new Image(new TextureRegionDrawable(current));
-        texturePickerButton.setScaling(Scaling.stretch);
-
-        Table wallPickerLayoutTable = new Table();
-        wallPickerLayoutTable.setFillParent(true);
-        wallPickerLayoutTable.align(Align.left | Align.top).pad(20f).padTop(20f);
-
-        wallPickerLayoutTable.add(texturePickerButton).width(50f).height(50f).align(Align.left).padBottom(6f);
-        wallPickerLayoutTable.row();
-
-        texturePickerButton.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                TextureRegionPicker picker = new TextureRegionPicker("Pick Current Texture", hudSkin, textures) {
-                    @Override
-                    public void result(Integer value, TextureRegion region) {
-                        setTexture(region);
-                        texturePickerButton.setDrawable(new TextureRegionDrawable(region));
-                    }
-                };
-                hudStage.addActor(picker);
-                picker.show(hudStage);
-                event.handle();
-            }
-        });
-
-        hudStage.addActor(wallPickerLayoutTable);
-    }
-
-    public void setTexture(TextureRegion texture) {
-        currentTexture = texture;
-
-        if(pickedLine != null) {
-            pickedLine.lowerMaterial.set(TextureAttribute.createDiffuse(texture));
-        }
-        else if(pickedSector != null) {
-            pickedSector.floorMaterial.set(TextureAttribute.createDiffuse(texture));
-        }
-        refreshRenderer();
     }
 
     public Array<TextureRegion> loadTexturesFromAtlas(String filename) {
