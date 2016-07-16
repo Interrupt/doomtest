@@ -160,7 +160,7 @@ public class Hud {
             if (dir != null && file != null && file.trim().length() != 0) {
                 currentFileName = file;
                 currentDirectory = dir;
-                editor.saveLevel(new FileHandle(dir + file));
+                editor.saveLevel(Gdx.files.absolute((dir + file)));
             }
 
             frame.dispose();
@@ -170,8 +170,7 @@ public class Hud {
     private static ActionListener newAction = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
-            editor.level = new Level();
-            editor.refreshRenderer();
+            editor.newLevel();
         }
     };
 
@@ -199,7 +198,7 @@ public class Hud {
 
             if (dialog.getFile() != null) {
                 currentFileName = dialog.getFile();
-                currentDirectory = dialog.getDirectory();
+                currentDirectory = "";
             }
 
             final String file = dialog.getFile();
@@ -210,8 +209,6 @@ public class Hud {
             if (level.exists()) {
                 currentFileName = level.path();
                 editor.openLevel(Gdx.files.absolute(dir + file));
-                editor.refreshRenderer();
-
                 frame.dispose();
             }
         }

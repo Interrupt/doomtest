@@ -12,7 +12,7 @@ import com.interrupt.doomtest.levels.Sector;
 import com.interrupt.doomtest.levels.Surface;
 
 public class Editor {
-    Level level;
+    public Level level;
 
     public Editor(Level editing) {
         this.level = editing;

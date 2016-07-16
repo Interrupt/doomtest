@@ -95,6 +95,6 @@ public class Line {
     }
 
     public void match(Line other) {
-        lowerMaterial = other.lowerMaterial;
+        lowerMaterial.match(other.lowerMaterial);
     }
 }

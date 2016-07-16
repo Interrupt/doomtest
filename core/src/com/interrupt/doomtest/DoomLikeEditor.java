@@ -760,6 +760,12 @@ public class DoomLikeEditor extends ApplicationAdapter {
         return textures;
     }
 
+    public void newLevel() {
+        level = new Level();
+        editor.level = level;
+        refreshRenderer();
+    }
+
     public void saveLevel(FileHandle file) {
         Json json = new Json();
         file.writeString(json.prettyPrint(level), false);
@@ -769,5 +775,37 @@ public class DoomLikeEditor extends ApplicationAdapter {
         Json json = new Json();
         String js = file.readString();
         level = json.fromJson(Level.class, js);
+
+        for(Sector s : level.sectors) {
+            matchSectorVertices(level.vertices, s);
+        }
+        for(Line l : level.lines) {
+            matchLineVertices(level.vertices, l);
+        }
+        editor.level = level;
+        refreshRenderer();
+    }
+
+    public void matchSectorVertices(Array<Vector2> vertices, Sector sector) {
+        for(int i = 0; i < sector.points.size; i++) {
+            Vector2 p = sector.points.get(i);
+            int existing = vertices.indexOf(p, false);
+            if(existing >= 0) {
+                sector.points.set(i, vertices.get(existing));
+            }
+        }
+
+        for(Sector s : sector.subsectors) {
+            matchSectorVertices(vertices, s);
+        }
+    }
+
+    public void matchLineVertices(Array<Vector2> vertices, Line line) {
+        Vector2 start = line.start;
+        Vector2 end = line.end;
+        int existingStart = vertices.indexOf(start, false);
+        int existingEnd = vertices.indexOf(end, false);
+        if(existingStart >= 0) line.start = vertices.get(existingStart);
+        if(existingEnd >= 0) line.end = vertices.get(existingEnd);
     }
 }
