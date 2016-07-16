@@ -18,7 +18,9 @@ public class Line {
     public Sector right = null;
 
     //Material upperMaterial = new Material(this.hashCode() + "_upper", ColorAttribute.createDiffuse(Color.WHITE), TextureAttribute.createDiffuse(Art.getTexture("textures/wall1.png")));
-    public Material lowerMaterial = new Material(this.hashCode() + "_lower", ColorAttribute.createDiffuse(Color.WHITE), TextureAttribute.createDiffuse(Art.getTexture("textures/wall1.png")));
+    public transient Material lowerMaterial = new Material(this.hashCode() + "_lower", ColorAttribute.createDiffuse(Color.WHITE), TextureAttribute.createDiffuse(Art.getTexture("textures/wall1.png")));
+
+    public Line() { }
 
     public Line(Vector2 start, Vector2 end, boolean solid, Sector left) {
         this.start = start;

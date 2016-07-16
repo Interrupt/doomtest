@@ -1,6 +1,8 @@
 package com.interrupt.doomtest.editor.ui;
 
+import com.badlogic.gdx.Files;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -22,18 +24,27 @@ import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.interrupt.doomtest.DoomLikeEditor;
 import com.interrupt.doomtest.editor.ui.menu.MenuItem;
 import com.interrupt.doomtest.editor.ui.menu.Scene2dMenuBar;
+import com.interrupt.doomtest.levels.Level;
 
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
+import java.io.FilenameFilter;
 
 public class Hud {
+
+    private static DoomLikeEditor editor = null;
 
     private static Skin loadSkin() {
         return new Skin(Gdx.files.local("ui/HoloSkin/Holo-dark-ldpi.json"),
                 new TextureAtlas(Gdx.files.local("ui/HoloSkin/Holo-dark-ldpi.atlas")));
     }
 
-    public static Stage create(final Array<TextureRegion> textures, TextureRegion current, final DoomLikeEditor editor) {
+    public static Stage create(final Array<TextureRegion> textures, TextureRegion current, final DoomLikeEditor doomLikeEditor) {
+
+        editor = doomLikeEditor;
 
         final OrthographicCamera hudCamera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         final Stage stage = new Stage(new ScreenViewport(hudCamera));
@@ -42,17 +53,11 @@ public class Hud {
 
         editor.currentTexture = current;
 
-        ActionListener emptyListener = new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-            }
-        };
-
         menuBar.addItem(new MenuItem("File", hudSkin)
-                .addItem(new MenuItem("Save", hudSkin, emptyListener))
-                .addItem(new MenuItem("Save As...", hudSkin, emptyListener))
-                .addItem(new MenuItem("New", hudSkin, emptyListener))
-                .addItem(new MenuItem("Open", hudSkin, emptyListener)));
+                .addItem(new MenuItem("Save", hudSkin, saveAction))
+                .addItem(new MenuItem("Save As...", hudSkin, saveAsAction))
+                .addItem(new MenuItem("New", hudSkin, newAction))
+                .addItem(new MenuItem("Open", hudSkin, openAction)));
         menuBar.pack();
 
         final Image texturePickerButton = new Image(new TextureRegionDrawable(current));
@@ -103,12 +108,113 @@ public class Hud {
     public static void setTexture(TextureRegion texture, DoomLikeEditor editor) {
         editor.currentTexture = texture;
 
-        if(editor.pickedLine != null) {
+        if (editor.pickedLine != null) {
             editor.pickedLine.lowerMaterial.set(TextureAttribute.createDiffuse(texture));
-        }
-        else if(editor.pickedSector != null) {
+        } else if (editor.pickedSector != null) {
             editor.pickedSector.floorMaterial.set(TextureAttribute.createDiffuse(texture));
         }
         editor.refreshRenderer();
     }
+
+    private static ActionListener saveAction = new ActionListener() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            if (currentFileName == null) {
+                saveAsAction.actionPerformed(e);
+            } else {
+                editor.saveLevel(Gdx.files.absolute(currentDirectory + currentFileName));
+            }
+        }
+    };
+
+    private static String currentFileName = null;
+    private static ActionListener saveAsAction = new ActionListener() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            JFrame frame = new JFrame("SaveFrame");
+            frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+            frame.setVisible(false);
+
+            FileDialog dialog = new FileDialog(frame, "Save Level", FileDialog.SAVE);
+
+            class WSFilter implements FilenameFilter {
+                @Override
+                public boolean accept(File dir, String name) {
+                    return (name.endsWith(".lvl"));
+                }
+            }
+            ;
+            FilenameFilter wsFilter = new WSFilter();
+
+            if (currentFileName == null)
+                dialog.setFile("level.lvl");
+            else
+                dialog.setFile(currentFileName);
+
+            dialog.setFilenameFilter(wsFilter);
+            dialog.setAlwaysOnTop(true);
+            dialog.setVisible(true);
+
+            final String file = dialog.getFile();
+            final String dir = dialog.getDirectory();
+
+            if (dir != null && file != null && file.trim().length() != 0) {
+                currentFileName = file;
+                currentDirectory = dir;
+                editor.saveLevel(new FileHandle(dir + file));
+            }
+
+            frame.dispose();
+        }
+    };
+
+    private static ActionListener newAction = new ActionListener() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            editor.level = new Level();
+            editor.refreshRenderer();
+        }
+    };
+
+    private static String currentDirectory = null;
+    private static ActionListener openAction = new ActionListener() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            JFrame frame = new JFrame("OpenFrame");
+            frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+            frame.setVisible(false);
+
+            FileDialog dialog = new FileDialog(frame, "Open Level", FileDialog.LOAD);
+            class WSFilter implements FilenameFilter {
+                @Override
+                public boolean accept(File dir, String name) {
+                    return (name.endsWith(".lvl"));
+                }
+            };
+
+            FilenameFilter wsFilter = new WSFilter();
+
+            dialog.setFilenameFilter(wsFilter);
+            dialog.setAlwaysOnTop(true);
+            dialog.setVisible(true);
+
+            if (dialog.getFile() != null) {
+                currentFileName = dialog.getFile();
+                currentDirectory = dialog.getDirectory();
+            }
+
+            final String file = dialog.getFile();
+            final String dir = dialog.getDirectory();
+            if (dir == null || file == null || file.trim().length() == 0) return;
+
+            FileHandle level = Gdx.files.getFileHandle(dir + file, Files.FileType.Absolute);
+            if (level.exists()) {
+                currentFileName = level.path();
+                editor.openLevel(Gdx.files.absolute(dir + file));
+                editor.refreshRenderer();
+
+                frame.dispose();
+            }
+        }
+    };
 }

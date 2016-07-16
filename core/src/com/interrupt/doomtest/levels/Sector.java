@@ -25,8 +25,8 @@ public class Sector {
 
     public boolean isSolid = false;
 
-    public Material floorMaterial = new Material(this.hashCode() + "_floor", ColorAttribute.createDiffuse(Color.WHITE), TextureAttribute.createDiffuse(Art.getTexture("textures/floor1.png")));
-    public Material ceilingMaterial = new Material(this.hashCode() + "_ceiling", ColorAttribute.createDiffuse(Color.WHITE), TextureAttribute.createDiffuse(Art.getTexture("textures/ceiling1.png")), IntAttribute.createCullFace(GL20.GL_FRONT));
+    public transient Material floorMaterial = new Material(this.hashCode() + "_floor", ColorAttribute.createDiffuse(Color.WHITE), TextureAttribute.createDiffuse(Art.getTexture("textures/floor1.png")));
+    public transient Material ceilingMaterial = new Material(this.hashCode() + "_ceiling", ColorAttribute.createDiffuse(Color.WHITE), TextureAttribute.createDiffuse(Art.getTexture("textures/ceiling1.png")), IntAttribute.createCullFace(GL20.GL_FRONT));
 
     public Sector() { }
 

@@ -4,6 +4,7 @@ import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputMultiplexer;
+import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g3d.Material;
@@ -18,6 +19,7 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.collision.Ray;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.Json;
 import com.interrupt.doomtest.collisions.WorldIntersection;
 import com.interrupt.doomtest.collisions.WorldIntersector;
 import com.interrupt.doomtest.editor.ui.Hud;
@@ -749,5 +751,16 @@ public class DoomLikeEditor extends ApplicationAdapter {
         }
 
         return textures;
+    }
+
+    public void saveLevel(FileHandle file) {
+        Json json = new Json();
+        file.writeString(json.prettyPrint(level), false);
+    }
+
+    public void openLevel(FileHandle file) {
+        Json json = new Json();
+        String js = file.readString();
+        level = json.fromJson(Level.class, js);
     }
 }
