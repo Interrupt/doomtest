@@ -16,12 +16,13 @@ The level format is a 2.5d Sector and Line collection like in the original Doom,
 * History / Undo
 * Multiple texture atlases
 
-## Useage
+## Usage
 * WSAD - move camera
 * Arrow keys - rotate camera
 * Enter - switch to edit mode
   * In edit mode, enter creates sector out of the current path
   * Click to place path vertices
+  * ESC to cancel current path
 * P - switch to pick mode
   * Click on a sector / wall to pick it
   * Alt + click & drag - adjust floor height of picked sector
